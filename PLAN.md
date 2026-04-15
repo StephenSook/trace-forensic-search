@@ -30,10 +30,10 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 1.4 | Actian DB container running | `docker-compose.yml` (sibling) | Claude | ✅ | Port 50051 up; end-to-end smoke test passed with `examples/01_hello_world.py`. |
 | 1.5 | Actian Python wheel vendored locally | `backend/vendor/actian_vectorai-0.1.0b2-py3-none-any.whl` | Claude | ✅ | Present in local vendor dir; **gitignored per Geri (hackathon Discord, 2026-04-15)** — each dev copies it from their own hackmamba clone. Setup steps added below. |
 | 1.6 | Frontend deps installed | `frontend/node_modules/` | Claude | ✅ | Via npm (348 pkgs). Bun lockfile retained for teammate flexibility. |
-| 2.1 | `requirements.txt` | `backend/requirements.txt` | Claude | ✅ | Written 2026-04-15. Pip install verification pending. |
+| 2.1 | `requirements.txt` | `backend/requirements.txt` | Claude | ✅ | Installed + import smoke test green 2026-04-15. Pinned `transformers<5.0` after a 5.5.4/FlagEmbedding collision. |
 | 2.2 | Root `docker-compose.yml` | `docker-compose.yml` | **Stephen** | ⬜ | Mirror hackmamba compose but with `./backend/.vectordata` volume. Claude on standby to assist. |
-| 2.3 | Config constants | `backend/config.py` | Claude | ⬜ | Collection name, vector dims, model IDs, env-var reads. |
-| 2.4 | Pydantic schemas | `backend/schemas.py` | Claude | ⬜ | Request/response models for FastAPI. Payload includes both `date_epoch: int` + `date_iso: str` (O4). |
+| 2.3 | Config constants | `backend/config.py` | Claude | ✅ | Written 2026-04-15. Exports `COLLECTION_NAME`, `VECTORS` (4 named specs), `VECTORAI_ADDR`, `RRF_K=60`. |
+| 2.4 | Pydantic schemas | `backend/schemas.py` | Claude | ✅ | Written 2026-04-15. `CasePayload`, `SearchRequest/Response`, `MatchMapping` — shape matches `TraceResultCard` props. |
 | 2.5 | Embedding model wrappers | `backend/embeddings.py` | **Vinh** | ⬜ | BGE-M3, SapBERT, CLIP loaders + `embed_text()`, `embed_image()`, `embed_text_clip()`. |
 | 2.6 | Filter DSL builder | `backend/filters.py` | **Vinh** | ⬜ | Builds `FilterBuilder` from request params; date filter uses `Field('date_epoch').between(...)` (O4). |
 | 2.7 | Ingest pipeline | `backend/ingest.py` | **Stephen** | ⬜ | Load synthetic JSON → compute 4 named vectors → upsert to `cases` collection. Depends on 2.3–2.5 (Vinh). |
@@ -44,7 +44,7 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 3.2 | Search state + form wiring | `frontend/src/pages/Index.tsx`, `TraceSearchPanel.tsx` | Stephen/Claude | ⬜ | Controlled inputs, lift state, submit → TanStack Query. |
 | 3.3 | Live results rendering | `frontend/src/components/TraceResultsPanel.tsx`, `TraceResultCard.tsx` | Stephen/Claude | ⬜ | Replace `mockResults` with query data. Keep exact visual shape. |
 | 3.4 | Loading/error states | same as 3.3 | Stephen/Claude | ⬜ | Skeleton rows, error toasts (sonner already installed). |
-| 4.1 | Synthetic cases | `data/synthetic/cases.json` | Claude | ⬜ | 60 cases, ≥5 ground-truth missing↔unidentified pairs. Includes TN eagle-tattoo demo pair. |
+| 4.1 | Synthetic cases | `data/synthetic/cases.json` + `generate_cases.py` | Claude | ✅ | 60 cases, 6 ground-truth pairs (MP/UP-001..006), 36 states, 2015-2024, demo pair wording verbatim, schema-validated 2026-04-15. |
 | 4.2 | Ingest run against real DB | runtime | Claude/Vinh | ⬜ | End-to-end: ingest → count == 60 → demo query hits correct record with ≥0.9 score. |
 | 5.1 | Demo script / talk track | separate doc TBD | Stephen | ⬜ | Sookra Methodology pitch opener. Not committed here. |
 | 5.2 | Loom demo video (3–5 min) | external | Stephen | ⬜ | Day 5 deliverable. |
@@ -185,6 +185,7 @@ Build order matters — later files import from earlier ones. **Claude pauses af
 - 4 named vectors per point: `physical_text` (768d SapBERT), `physical_image` (512d CLIP), `circumstances` (1024d BGE-M3), `clothing` (1024d BGE-M3). All Cosine.
 - Payload always contains: `case_id`, `case_type`, `sex`, `age_low`, `age_high`, `state`, `date_epoch` (int), `date_iso` (str), plus the raw text fields used for embeddings (`physical_text`, `circumstances`, `clothing`) and optional `image_url`.
 - Date filtering uses `Field('date_epoch').between(start_epoch, end_epoch)` — never filter against `date_iso`.
+- **`case_id` semantics:** `MP-001..MP-006` are ground-truth paired with `UP-001..UP-006` (same fictional person). `MP-007+` and `UP-007+` are unrelated singletons that happen to share a numeric suffix — **do not** pair by suffix above 006.
 
 If anyone spots a field drift (e.g., Vinh's `search.py` expects `dob` but Stephen's `ingest.py` writes `date_epoch`), flag immediately before merging.
 
