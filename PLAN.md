@@ -84,7 +84,7 @@ One Actian collection called `cases`. Each point (one case record) holds four na
 - Native use of Actian's named-vector feature (stronger showcase for the 30% scoring weight)
 - `physical_image` (CLIP) lives naturally alongside `physical_text` (SapBERT) on the same point — no "image collection" orphan
 
-**See open decision O1 below** — Stephen to confirm or push back.
+**Locked 2026-04-15 by Stephen** — D1 stands. One `cases` collection with 4 named vectors.
 
 ### D2 — Fusion: built-in `reciprocal_rank_fusion` with k=60
 
@@ -114,7 +114,7 @@ All four named vectors use `Distance.Cosine`. We L2-normalize vectors at embed t
 
 ## Open decisions requiring Stephen sign-off
 
-- [ ] **O1:** Confirm D1 (one collection with 4 named vectors) vs strict adherence to backend README's three-collection design. Recommend D1. Impact if D1 rejected: `ingest.py` and `search.py` get meaningfully more code.
+- [x] **O1:** ~~Confirm D1 (one collection with 4 named vectors) vs three-collection design.~~ **Locked D1 on 2026-04-15.** One `cases` collection, 4 named vectors per point.
 - [ ] **O2:** Include the sparse BM25 stretch (D3 stretch path)? Adds ~½ day on Day 4. Recommend including only if Day 3 ends with Tasks 2.1–2.9 all ✅.
 - [ ] **O3:** Scope of states in the demo dropdown — Tennessee only (demo-tight) vs full US 50-state list (more realistic). Recommend full list; it's one-line code.
 - [ ] **O4:** Store `date` in payload as ISO string (`"2019-10-14"`) or as unix-epoch integer for range filtering? Actian Filter DSL `between()` works on numerics cleanly. Recommend unix-epoch int + a separate ISO string for display.
