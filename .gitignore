@@ -137,3 +137,33 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# --- Trace project additions ---
+
+# Actian VectorAI client wheel — hackathon guidance (Discord, Geri): do NOT push.
+# Each developer copies it into backend/vendor/ from their own clone of
+# hackmamba-io/actian-vectorAI-db-beta. See PLAN.md § Setup.
+backend/vendor/actian_vectorai*.whl
+
+# Persistent vector DB data volume (created by docker compose)
+backend/.vectordata/
+
+# Python
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.venv/
+backend/venv/
+*.pyc
+.pytest_cache/
+
+# Serena MCP agent workspace
+.serena/
+
+# macOS
+.DS_Store
+
+# Env files
+.env
+.env.local
+.env.*.local
+
