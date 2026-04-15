@@ -30,15 +30,15 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 1.4 | Actian DB container running | `docker-compose.yml` (sibling) | Claude | ✅ | Port 50051 up; end-to-end smoke test passed with `examples/01_hello_world.py`. |
 | 1.5 | Actian Python wheel vendored locally | `backend/vendor/actian_vectorai-0.1.0b2-py3-none-any.whl` | Claude | ✅ | Present in local vendor dir; **gitignored per Geri (hackathon Discord, 2026-04-15)** — each dev copies it from their own hackmamba clone. Setup steps added below. |
 | 1.6 | Frontend deps installed | `frontend/node_modules/` | Claude | ✅ | Via npm (348 pkgs). Bun lockfile retained for teammate flexibility. |
-| 2.1 | `requirements.txt` | `backend/requirements.txt` | Claude | ⬜ | **Next.** Pause after this before moving on. |
-| 2.2 | Root `docker-compose.yml` | `docker-compose.yml` | Claude | ⬜ | Mirror hackmamba compose but with `./backend/.vectordata` volume. |
+| 2.1 | `requirements.txt` | `backend/requirements.txt` | Claude | ✅ | Written 2026-04-15. Pip install verification pending. |
+| 2.2 | Root `docker-compose.yml` | `docker-compose.yml` | **Stephen** | ⬜ | Mirror hackmamba compose but with `./backend/.vectordata` volume. Claude on standby to assist. |
 | 2.3 | Config constants | `backend/config.py` | Claude | ⬜ | Collection name, vector dims, model IDs, env-var reads. |
-| 2.4 | Pydantic schemas | `backend/schemas.py` | Claude | ⬜ | Request/response models for FastAPI. |
-| 2.5 | Embedding model wrappers | `backend/embeddings.py` | Claude | ⬜ | BGE-M3, SapBERT, CLIP loaders + `embed_text()`, `embed_image()`, `embed_text_clip()`. |
-| 2.6 | Filter DSL builder | `backend/filters.py` | Claude | ⬜ | Builds `FilterBuilder` from request params (case_type, state, sex, age, date). |
-| 2.7 | Ingest pipeline | `backend/ingest.py` | Claude | ⬜ | Load synthetic JSON → compute 4 named vectors → upsert to `cases` collection. |
-| 2.8 | Hybrid search engine | `backend/search.py` | Claude | ⬜ | Multi-vector fan-out search + RRF fusion + "Why This Matched" breakdown. |
-| 2.9 | FastAPI server | `backend/main.py` | Claude | ⬜ | Endpoints: `POST /search`, `GET /case/{id}`, `GET /health`. CORS for :5173. |
+| 2.4 | Pydantic schemas | `backend/schemas.py` | Claude | ⬜ | Request/response models for FastAPI. Payload includes both `date_epoch: int` + `date_iso: str` (O4). |
+| 2.5 | Embedding model wrappers | `backend/embeddings.py` | **Vinh** | ⬜ | BGE-M3, SapBERT, CLIP loaders + `embed_text()`, `embed_image()`, `embed_text_clip()`. |
+| 2.6 | Filter DSL builder | `backend/filters.py` | **Vinh** | ⬜ | Builds `FilterBuilder` from request params; date filter uses `Field('date_epoch').between(...)` (O4). |
+| 2.7 | Ingest pipeline | `backend/ingest.py` | **Stephen** | ⬜ | Load synthetic JSON → compute 4 named vectors → upsert to `cases` collection. Depends on 2.3–2.5 (Vinh). |
+| 2.8 | Hybrid search engine | `backend/search.py` | **Vinh** | ⬜ | Multi-vector fan-out search + RRF fusion + "Why This Matched" breakdown. |
+| 2.9 | FastAPI server | `backend/main.py` | **Vinh** | ⬜ | Endpoints: `POST /search`, `GET /case/{id}`, `GET /health`. CORS for :5173. |
 | 2.10 | Backend tests | `backend/tests/*.py` | Claude | ⬜ | Filter builder, dimensions, demo query integration. |
 | 3.1 | API client | `frontend/src/lib/api.ts` | Stephen/Claude | ⬜ | Typed fetch wrapper for `POST /search` and `GET /case/{id}`. |
 | 3.2 | Search state + form wiring | `frontend/src/pages/Index.tsx`, `TraceSearchPanel.tsx` | Stephen/Claude | ⬜ | Controlled inputs, lift state, submit → TanStack Query. |
@@ -114,10 +114,10 @@ All four named vectors use `Distance.Cosine`. We L2-normalize vectors at embed t
 
 ## Open decisions requiring Stephen sign-off
 
-- [x] **O1:** ~~Confirm D1 (one collection with 4 named vectors) vs three-collection design.~~ **Locked D1 on 2026-04-15.** One `cases` collection, 4 named vectors per point.
+- [x] **O1:** ~~Confirm D1 (one collection with 4 named vectors) vs three-collection design.~~ **Locked D1 on 2026-04-15** (Stephen + Vinh). One `cases` collection, 4 named vectors per point.
 - [ ] **O2:** Include the sparse BM25 stretch (D3 stretch path)? Adds ~½ day on Day 4. Recommend including only if Day 3 ends with Tasks 2.1–2.9 all ✅.
 - [ ] **O3:** Scope of states in the demo dropdown — Tennessee only (demo-tight) vs full US 50-state list (more realistic). Recommend full list; it's one-line code.
-- [ ] **O4:** Store `date` in payload as ISO string (`"2019-10-14"`) or as unix-epoch integer for range filtering? Actian Filter DSL `between()` works on numerics cleanly. Recommend unix-epoch int + a separate ISO string for display.
+- [x] **O4:** ~~Store `date` as ISO string or unix-epoch int?~~ **Locked 2026-04-15 (Stephen + Vinh): store both.** Payload has `date_epoch: int` (for `Field('date_epoch').between()` numeric filters) and `date_iso: str` (e.g. `"2019-10-14"`, for UI display). Negligible payload cost, zero ambiguity between ingest and search.
 
 ---
 
@@ -172,6 +172,22 @@ See status dashboard rows 1.1–1.6.
 
 Build order matters — later files import from earlier ones. **Claude pauses after Task 2.1 per Stephen's instruction ("let me know when you're done with requirements before you move to the next thing").**
 
+**Ownership split (locked 2026-04-15):**
+
+| Owner | Files | Rationale |
+|---|---|---|
+| **Stephen** | `docker-compose.yml`, `backend/ingest.py` | Clean infra-and-data-loading lane; no overlap with Vinh's files. |
+| **Vinh** | `backend/embeddings.py`, `backend/filters.py`, `backend/search.py`, `backend/main.py` | The AI + API brain; his lane per team division. |
+| **Claude** | `backend/config.py`, `backend/schemas.py`, `backend/tests/*`, frontend wiring (Phase 3), synthetic data (Phase 4) | Glue + test coverage + Phase 3 so the UI doesn't stay on mocks. |
+
+**Shared contract (don't drift):**
+- Collection name: `cases` (defined in `config.py`)
+- 4 named vectors per point: `physical_text` (768d SapBERT), `physical_image` (512d CLIP), `circumstances` (1024d BGE-M3), `clothing` (1024d BGE-M3). All Cosine.
+- Payload always contains: `case_id`, `case_type`, `sex`, `age_low`, `age_high`, `state`, `date_epoch` (int), `date_iso` (str), plus the raw text fields used for embeddings (`physical_text`, `circumstances`, `clothing`) and optional `image_url`.
+- Date filtering uses `Field('date_epoch').between(start_epoch, end_epoch)` — never filter against `date_iso`.
+
+If anyone spots a field drift (e.g., Vinh's `search.py` expects `dob` but Stephen's `ingest.py` writes `date_epoch`), flag immediately before merging.
+
 #### Task 2.1 — `backend/requirements.txt`
 
 **Files:** Create `backend/requirements.txt`.
@@ -218,7 +234,7 @@ scikit-learn>=1.5.0
 
 **Commit:** `chore(backend): pin Python dependencies for Actian client, embeddings, FastAPI`
 
-**Then STOP and report back to Stephen.**
+**Status:** File written 2026-04-15. Pip install verification was interrupted mid-run and is pending Stephen's green-light to resume (venv at `backend/.venv/` has pip upgraded but no packages installed yet).
 
 #### Task 2.2 — `docker-compose.yml` at repo root
 
