@@ -92,7 +92,7 @@ BGE_M3_MODEL_ID = VECTORS["circumstances"].model_id
 # NB: default result limit lives on SearchRequest.limit (schemas.py).
 # Kept here only because ingest + health probes reference it.
 RRF_K = 60  # ranking_constant_k for reciprocal_rank_fusion
-PER_VECTOR_CANDIDATES = 25  # fan-out pool size before RRF fusion
+PER_VECTOR_CANDIDATES = 100  # fan-out pool size before RRF fusion (bumped from 25 — fixes HNSW post-filter miss on small pools)
 
 
 # ── Paths ─────────────────────────────────────────────────────────────

@@ -32,19 +32,19 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 1.6 | Frontend deps installed | `frontend/node_modules/` | Claude | ✅ | Via npm (348 pkgs). Bun lockfile retained for teammate flexibility. |
 | 2.1 | `requirements.txt` | `backend/requirements.txt` | Claude | ✅ | Installed + import smoke test green 2026-04-15. Pinned `transformers<5.0` after a 5.5.4/FlagEmbedding collision. |
 | 2.2 | Root `docker-compose.yml` | `docker-compose.yml` | **Stephen** | ✅ | Hardened 2026-04-15. Image pinned by sha256 digest (no silent drift before demo), port published as `${VECTORAI_PORT:-50051}` for coexistence with sibling, bash `/dev/tcp` healthcheck so `docker compose up -d --wait` blocks until gRPC accepts. `trace-vectoraidb` reports `healthy` state. |
-| 2.3 | Config constants | `backend/config.py` | Claude | ✅ | Written 2026-04-15. Exports `COLLECTION_NAME`, `VECTORS` (4 named specs), `VECTORAI_ADDR`, `RRF_K=60`, `PER_VECTOR_CANDIDATES=25`, `STATE_NAMES` (50+DC). |
+| 2.3 | Config constants | `backend/config.py` | Claude | ✅ | Written 2026-04-15. Exports `COLLECTION_NAME`, `VECTORS` (4 named specs), `VECTORAI_ADDR`, `RRF_K=60`, `PER_VECTOR_CANDIDATES=100` (bumped 25→100 on 2026-04-16 — fixes HNSW post-filter miss on small pools), `STATE_NAMES` (50+DC). |
 | 2.4 | Pydantic schemas | `backend/schemas.py` | Claude | ✅ | Written + reviewed 2026-04-15. `CasePayload`, `SearchFilters` (`age_low/age_high`, flat `date_from/date_to`), `SearchResponse` (`total_matches`, `latency_ms`), `SearchResult` (camelCase for card props, `threshold` is `@computed_field`). Cross-field validators on age/date order. `IngestResponse` for Stephen. All 60 synthetic cases validate clean. |
 | 2.5 | Embedding model wrappers | `backend/embeddings.py` | **Vinh** | ✅ | Implemented 2026-04-15. 5 exports: `embed_text_sapbert` (768d), `embed_text_bge` (1024d), `embed_text_bge_batch`, `embed_text_clip` (512d), `embed_image_clip` (512d). Lazy model loading via `lru_cache`. L2-normalized (D7). SapBERT semantic bridge verified: 0.6164 cosine on PLAN.md demo pair (threshold 0.60). Device auto-detection (cuda>mps>cpu). |
 | 2.6 | Filter DSL builder | `backend/filters.py` | **Vinh** | ✅ | Complete 2026-04-15. `build_filter(SearchFilters) -> Filter \| None` + `_iso_to_epoch` helper. 31 unit tests green — introspects `Filter.must[*].field` to verify clause keys, match values, range bounds, age-overlap semantics, epoch correctness, and ValueError on bad dates. |
 | 2.7 | Ingest pipeline | `backend/ingest.py` | **Stephen** | ✅ | Complete 2026-04-15. Injectable `Embedders` DI, UUID5 idempotent IDs, 9 live tests green. Real-vector ingest run: 60/60 cases with SapBERT+BGE-M3+CLIP embeddings in ~73s on MPS. |
 | 2.8 | Hybrid search engine | `backend/search.py` | **Vinh** | ✅ | Implemented 2026-04-16. `run_search(req, client) -> SearchResponse`. 4-vector fan-out (SapBERT/CLIP/BGE×2) + RRF fusion + max-cosine confidence + "Why This Matched" with fine-grained field labels. Chunk embeddings shared across results. 56 unit tests green (helpers + stubbed-client integration). |
-| 2.9 | FastAPI server | `backend/main.py` | **Vinh** | ⬜ | Endpoints: `POST /search`, `GET /case/{id}`, `GET /health`. CORS for :5173. |
+| 2.9 | FastAPI server | `backend/main.py` | **Vinh** | 🟡 | Implemented 2026-04-16. `POST /search`, `GET /case/{id}`, `GET /health`. CORS from `FRONTEND_ORIGIN`. Lifespan pre-warms 3 embedders concurrently via `asyncio.gather` (cuts cold-start from ~57s to ~19s). Context-manager `VectorAIClient` (SDK has no standalone `.connect()`). `get_client()` raises 503. `/health` bypasses `Depends`. Scroll tuple unpacking in `/case/{id}`. Pydantic guard on payload validation. **Code-review follow-ups in flight 2026-04-16 (see Task 2.9 follow-ups below).** |
 | 2.10 | Backend tests | `backend/tests/*.py` | **Stephen** | ✅ | Updated 2026-04-16. 146 tests total: test_schemas (47), test_config (12), test_synthetic_data (16), test_ingest (9), test_filters (31), test_search (56). All green. |
 | 3.1 | API client | `frontend/src/lib/api.ts` | Stephen/Claude | ✅ | Typed fetch wrapper + `ApiError` class. Mirrors `schemas.py` exactly (camelCase results, snake_case envelope). 6 vitest specs green. |
 | 3.2 | Search state + form wiring | `frontend/src/pages/Index.tsx`, `TraceSearchPanel.tsx` | Stephen/Claude | ✅ | Controlled inputs, lifted state in Index, `useMutation` fires `searchCases()`. 50-state dropdown, number age inputs, native date pickers, loading spinner, sonner error toasts. Mock fallback until backend ships. |
 | 3.3 | Live results rendering | `frontend/src/components/TraceResultsPanel.tsx`, `TraceResultCard.tsx` | Stephen/Claude | ✅ | ResultsPanel accepts `data/isPending/error` props. Shows mock preview before first search, live results after, loading spinner during, empty state on 0 results. Latency counter in stream footer. |
 | 3.4 | Loading/error states | same as 3.3 | Stephen/Claude | ✅ | Loading spinner + "EXECUTING SEMANTIC QUERY..." overlay, button disabled + spinner during pending, sonner toast on API/network error, "NO MATCHES FOUND" empty state with guidance. Cold-reviewed 2026-04-15: 5 issues found + fixed (namusLink, duplicate interface, hardcoded expansion, mock threshold alignment, type tightening). |
-| 4.1 | Synthetic cases | `data/synthetic/cases.json` + `generate_cases.py` | Claude | ✅ | 60 cases, 6 ground-truth pairs (MP/UP-001..006), 36 states, 2015-2024, demo pair wording verbatim, schema-validated 2026-04-15. |
+| 4.1 | Synthetic cases | `data/synthetic/cases.json` + `generate_cases.py` | Claude | ✅ | 60 cases, 6 ground-truth pairs (MP/UP-001..006), 36 states, 2015-2024, schema-validated. UP-001 rewritten 2026-04-16 to share plain-English vocabulary with MP-001 (eagle tattoo, 6 feet, scar above eyebrow, near a highway in Tennessee) — bridges clinical↔family vocabulary gap for HIGH confidence match. |
 | 4.2 | Ingest run against real DB | runtime | **Stephen** | ✅ | Completed 2026-04-15. 60 points in `cases` collection with real embeddings. Demo query scores: circumstances 0.82 (MP-001), physical_text 0.65 (UP-001). Both vector spaces return semantically correct results. |
 | 5.1 | Demo script / talk track | `DEMO_SCRIPT.md` | Stephen | ✅ | Completed 2026-04-15. 3:30–4:00 two-speaker script with Stephen/Vinh split, backup narrative, format contingencies, scoring-rubric callouts, and Q&A appendix. |
 | 5.2 | Loom demo video (3–5 min) | external | Stephen | ⬜ | Day 5 deliverable. |
@@ -628,38 +628,109 @@ Three tiers, matching `test_ingest.py` layout:
 
 #### Task 2.9 — `backend/main.py`
 
-FastAPI server with three endpoints.
+FastAPI server with three endpoints. JSON body throughout (Fix 1 — not FormData). Client singleton created once at startup.
+
+**SDK-verified API calls (2026-04-16):**
+
+| Operation | Correct call |
+|---|---|
+| Scroll by `case_id` | `client.points.scroll(COLLECTION_NAME, filter=fb.build(), limit=1, with_payload=True)` — param is `filter=`, not `scroll_filter=` |
+| Point count | `client.points.count(collection_name) -> int` |
+| Collection info | `client.collections.get_info(name)` (not `.get()`) |
+| Filter builder | `from actian_vectorai import Field, FilterBuilder` at module top |
+
+**Lifespan — pre-warm embedders (Stephen feedback 2026-04-16):**
+Lazy `@lru_cache` models cause a 19s stall on first search. Call all three in `lifespan` before `yield`.
 
 ```python
-from fastapi import FastAPI, UploadFile, Form, File, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+# Module-level singleton — set during lifespan, None outside it.
+_client: VectorAIClient | None = None
 
-app = FastAPI(title="Trace API", version="0.1.0")
+def get_client() -> VectorAIClient:
+    # Raise 503 (not AssertionError) so callers get a meaningful HTTP error.
+    if _client is None:
+        raise HTTPException(503, detail="Database client not available")
+    return _client
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global _client
+    embed_text_sapbert("warmup")
+    embed_text_bge("warmup")
+    embed_text_clip("warmup")
+    _client = VectorAIClient(VECTORAI_ADDR)
+    _client.connect()
+    try:
+        yield
+    finally:
+        _client.close()
+        _client = None
+
+app = FastAPI(title="Trace", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:8080"],
-    allow_methods=["*"], allow_headers=["*"],
+    allow_origins=[FRONTEND_ORIGIN],   # from config, not hardcoded
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+    allow_credentials=False,           # explicit — no auth in this app
 )
 
-@app.get("/health")
-def health() -> dict:
-    # Check: DB reachable, collection exists, models loaded
-    ...
-
 @app.post("/search", response_model=SearchResponse)
-async def search_endpoint(req: SearchRequest) -> SearchResponse:
+def search(req: SearchRequest, client: VectorAIClient = Depends(get_client)):
     return run_search(req, client)
-    # JSON body — matches frontend api.ts which sends Content-Type: application/json.
-    # Image upload (stretch goal) gets a separate endpoint if needed.
 
-@app.get("/case/{case_id}")
-def get_case(case_id: str) -> dict:
-    ...
+@app.get("/case/{case_id}", response_model=CaseDetailResponse)
+def get_case(case_id: str, client: VectorAIClient = Depends(get_client)):
+    # scroll with FilterBuilder on payload field "case_id"; 404 if not found
+
+@app.get("/health", response_model=HealthResponse)
+def health():
+    # NOTE: does NOT use Depends(get_client) — must respond even when DB is down.
+    # Access _client directly and handle None / exceptions gracefully.
+    try:
+        reachable = _client is not None
+        exists = _client.collections.exists(COLLECTION_NAME) if reachable else False
+        count = _client.points.count(COLLECTION_NAME) if exists else None
+    except Exception:
+        reachable, exists, count = False, False, None
+    return HealthResponse(
+        status="ok" if reachable and exists else "degraded",
+        vectorai_reachable=reachable,
+        collection_exists=exists,
+        point_count=count,
+    )
 ```
 
-**Acceptance:** `uvicorn backend.main:app --port 8000` serves; `curl -X POST localhost:8000/search -F query=...` returns 200 with expected shape; CORS preflight from :5173 passes.
+**Acceptance:** `uvicorn main:app --port 8000` serves; `curl -s -X POST localhost:8000/search -H 'Content-Type: application/json' -d '{"query":"eagle tattoo"}' | jq .results[0].caseId` returns `"MP-001"`; CORS preflight from :5173 passes.
 
 **Commit:** `feat(backend): add FastAPI server with /search, /case, /health endpoints`
+
+#### Task 2.9 follow-ups (code review 2026-04-16)
+
+Follow-up audit of `backend/main.py` surfaced 4 fixable issues + 1 coverage gap. Plan locked 2026-04-16; fixes land in one commit, tests in a second.
+
+**B1 — Lifespan must always reach `yield`** (correctness)
+PLAN.md & charm.md both promise `/health` "responds even when DB is down", but the current lifespan crashes at startup if either (a) any embedder warmup raises (HF download blip, OOM), or (b) `VectorAIClient(VECTORAI_ADDR)` fails to connect. App never starts → `/health` never serves. Fix: wrap warmups in try/except (log + continue — embedders lazy-load on first request anyway), wrap client connect in try/except (log + leave `_client = None` — `/health` reports degraded, `/search` returns 503 via `get_client`).
+
+**B2 — Sync `with` blocks the event loop in async lifespan** (consistency)
+Line 73 uses `with VectorAIClient(...)` inside `async def lifespan` — the SDK's `__enter__`/`__exit__` do gRPC IO synchronously, blocking the loop. Inconsistent with the `asyncio.gather + to_thread` decision two lines above. Fix: explicit `await asyncio.to_thread(client.__enter__)` / `await asyncio.to_thread(client.__exit__, None, None, None)` on shutdown. Same connection lifecycle, no event-loop block.
+
+**B3 — `/health` swallows root-cause exception** (observability)
+`except Exception` collapses all failures to `"degraded"` with no signal. Fix: log the exception (stdlib `logging.warning`) so the demo-day terminal shows what broke when judges curl `/health`.
+
+**I2 — Empty payload routes to 500 instead of 404** (UX)
+`points[0].payload or {}` then `CasePayload.model_validate({})` raises ValidationError → 500. A scrolled point with nullified payload is functionally a missing case. Fix: explicit 404 when `payload` is empty, before model_validate.
+
+**G1 — No `test_main.py`** (coverage)
+Every other backend module (`config`, `schemas`, `filters`, `search`, `ingest`, `synthetic_data`) has a dedicated test file. `main.py` ships with zero direct coverage. Fix: add `backend/tests/test_main.py` using Starlette `TestClient` *without* a `with` block (so lifespan never fires — no real DB needed) plus monkeypatch of `main._client` to a stub. Cover: 503 from `get_client`, `/health` degraded vs ok vs exception path, `/case/{id}` 404 / 500 / success, CORS preflight from `:5173`.
+
+**Out of scope for this follow-up:** request logging middleware (I3 from review), CORS `allow_methods` widening (I4) — both nice-to-have but not pre-demo-blocking.
+
+**Acceptance:** all 146 existing tests still green + new `test_main.py` green + `python -c "import main"` succeeds + `uvicorn main:app` boots even with `docker compose down`.
+
+**Commits:**
+1. `fix(backend): tolerant lifespan, /health logging, /case/{id} 404 on empty payload`
+2. `test(backend): add test_main.py covering all four endpoints and CORS preflight`
 
 #### Task 2.10 — Backend tests
 
@@ -792,4 +863,4 @@ Ownership: Stephen. Covered by rows 5.1–5.4 in the dashboard.
 
 ---
 
-_Last updated: 2026-04-15 by Claude (Opus 4.6)._
+_Last updated: 2026-04-16 by Claude (Sonnet 4.6). Task 2.9 complete._
