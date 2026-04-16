@@ -1,10 +1,25 @@
 services:
   vectoraidb:
-    image: williamimoh/actian-vectorai-db:latest
+    # Hackathon-distributed Actian VectorAI DB image (Apr 2026 build challenge).
+    # Pinned by digest so a re-push from the maintainer can't shift versions
+    # between now and demo day. To update: resolve the new digest with
+    #   docker inspect --format='{{index .RepoDigests 0}}' williamimoh/actian-vectorai-db:latest
+    image: williamimoh/actian-vectorai-db@sha256:23a7901043df3441c936cb0aaf87eaaa00ce8842920c5b7ad7a165bd841f5040
     container_name: trace-vectoraidb
     ports:
-      - "50051:50051"
+      # Host port is overridable via .env so a second instance (or the
+      # sibling hackmamba compose) can coexist on a different port.
+      - "${VECTORAI_PORT:-50051}:50051"
     volumes:
       - ./backend/.vectordata:/data
     restart: unless-stopped
     stop_grace_period: 2m
+    # TCP probe via bash's /dev/tcp pseudo-device — image has bash, no nc.
+    # Lets `docker compose up -d --wait` block until the gRPC listener
+    # accepts, so ingest.py / uvicorn don't race the DB on cold boot.
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/50051"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s

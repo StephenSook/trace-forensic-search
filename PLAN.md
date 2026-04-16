@@ -31,7 +31,7 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 1.5 | Actian Python wheel vendored locally | `backend/vendor/actian_vectorai-0.1.0b2-py3-none-any.whl` | Claude | ✅ | Present in local vendor dir; **gitignored per Geri (hackathon Discord, 2026-04-15)** — each dev copies it from their own hackmamba clone. Setup steps added below. |
 | 1.6 | Frontend deps installed | `frontend/node_modules/` | Claude | ✅ | Via npm (348 pkgs). Bun lockfile retained for teammate flexibility. |
 | 2.1 | `requirements.txt` | `backend/requirements.txt` | Claude | ✅ | Installed + import smoke test green 2026-04-15. Pinned `transformers<5.0` after a 5.5.4/FlagEmbedding collision. |
-| 2.2 | Root `docker-compose.yml` | `docker-compose.yml` | **Stephen** | ✅ | Container up 2026-04-15. Sibling stopped, `trace-vectoraidb` on :50051, `./backend/.vectordata` mount populated (datastore.ini, vde.log), `health_check()` returns v1.0.0. |
+| 2.2 | Root `docker-compose.yml` | `docker-compose.yml` | **Stephen** | ✅ | Hardened 2026-04-15. Image pinned by sha256 digest (no silent drift before demo), port published as `${VECTORAI_PORT:-50051}` for coexistence with sibling, bash `/dev/tcp` healthcheck so `docker compose up -d --wait` blocks until gRPC accepts. `trace-vectoraidb` reports `healthy` state. |
 | 2.3 | Config constants | `backend/config.py` | Claude | ✅ | Written 2026-04-15. Exports `COLLECTION_NAME`, `VECTORS` (4 named specs), `VECTORAI_ADDR`, `RRF_K=60`. |
 | 2.4 | Pydantic schemas | `backend/schemas.py` | Claude | ✅ | Written + reviewed 2026-04-15. `CasePayload`, `SearchFilters` (`age_low/age_high`, flat `date_from/date_to`), `SearchResponse` (`total_matches`, `latency_ms`), `SearchResult` (camelCase for card props, `threshold` is `@computed_field`). Cross-field validators on age/date order. `IngestResponse` for Stephen. All 60 synthetic cases validate clean. |
 | 2.5 | Embedding model wrappers | `backend/embeddings.py` | **Vinh** | ⬜ | BGE-M3, SapBERT, CLIP loaders + `embed_text()`, `embed_image()`, `embed_text_clip()`. |
@@ -148,16 +148,31 @@ source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# 5. Ingest synthetic data (first time only)
+# 5. Bring up Actian VectorAI DB (from repo root)
+cd ..
+docker compose up -d --wait    # --wait blocks until healthcheck green
+
+# 6. Ingest synthetic data (first time only)
+cd backend
 python ingest.py
 
-# 6. Start API
+# 7. Start API
 uvicorn main:app --reload --port 8000
 
-# 7. In a new terminal — frontend
+# 8. In a new terminal — frontend
 cd ../frontend
 npm install               # first time only
 npm run dev               # serves on localhost:5173
+```
+
+**Reset the DB** (if `.vectordata/` corrupts or you want a clean ingest):
+
+```bash
+# from repo root
+docker compose down
+rm -rf backend/.vectordata
+docker compose up -d --wait
+cd backend && python ingest.py
 ```
 
 ---
@@ -264,32 +279,20 @@ services:
 
 Constants + env-var loading. No external dependencies on our code.
 
+Shipped in `backend/config.py` (2026-04-15). Module-level constants, not a dataclass. Key exports:
+
 ```python
-import os
-from dataclasses import dataclass
-
-@dataclass(frozen=True)
-class Config:
-    actian_host: str = os.getenv("ACTIAN_HOST", "localhost:50051")
-    collection_name: str = "cases"
-    embedding_device: str = os.getenv("EMBEDDING_DEVICE", "cpu")
-    enable_clip: bool = os.getenv("ENABLE_CLIP", "1") == "1"
-
-    # Vector dims (must match model outputs — fail loudly if a model is swapped)
-    physical_text_dim: int = 768
-    physical_image_dim: int = 512
-    circumstances_dim: int = 1024
-    clothing_dim: int = 1024
-
-    # RRF constant
-    rrf_k: int = 60
-
-    # Default search params
-    default_limit: int = 10
-    per_vector_candidates: int = 50  # pulled per named vector before fusion
-
-CONFIG = Config()
+VECTORAI_HOST     = os.getenv("VECTORAI_HOST", "localhost")
+VECTORAI_PORT     = _int_env("VECTORAI_PORT", 50051)   # loud error on bad input
+VECTORAI_ADDR     = f"{VECTORAI_HOST}:{VECTORAI_PORT}" # pass to VectorAIClient()
+COLLECTION_NAME   = "cases"
+VECTORS: dict[str, VectorSpec]  # 4 named specs: physical_text/physical_image/circumstances/clothing
+RRF_K             = 60
+SYNTHETIC_CASES_PATH              # absolute path to data/synthetic/cases.json
+FRONTEND_ORIGIN   = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
 ```
+
+**Env vars** (all optional, defaults work out of the box): `VECTORAI_HOST`, `VECTORAI_PORT`, `FRONTEND_ORIGIN`. Do **not** use `ACTIAN_HOST` — an earlier draft of this plan used that name; it is not read by the shipped code.
 
 **Test:** `backend/tests/test_config.py` — imports CONFIG, asserts defaults, asserts env overrides are respected.
 

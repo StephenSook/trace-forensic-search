@@ -32,6 +32,33 @@ Trace stores each case record across three independent named vector spaces — p
 
 ---
 
+## Quick Start
+
+```bash
+# 1. Vendor the Actian wheel (copy from the hackmamba challenge repo — not in git)
+mkdir -p backend/vendor
+cp /path/to/actian-vectorAI-db-beta/actian_vectorai-0.1.0b2-py3-none-any.whl backend/vendor/
+
+# 2. Backend — Python 3.12 venv + deps
+cd backend
+python3 -m venv .venv && source .venv/bin/activate
+pip install --upgrade pip && pip install -r requirements.txt
+
+# 3. Start Actian VectorAI DB (from repo root)
+cd .. && docker compose up -d --wait
+
+# 4. Ingest synthetic data, then start the API
+cd backend && python ingest.py
+uvicorn main:app --reload --port 8000
+
+# 5. In a new terminal — frontend
+cd frontend && npm install && npm run dev
+```
+
+Open http://localhost:5173. Full setup and architecture notes live in `PLAN.md`.
+
+---
+
 ## Why Local-First
 
 Forensic databases contain restricted personally identifiable information — DNA profiles, dental records, and unredacted case circumstances. Sending this data to cloud APIs violates the regulatory environment these tools operate in. Trace runs entirely offline: local Docker container, local embedding models, zero external API calls after setup.
