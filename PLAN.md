@@ -31,7 +31,7 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 1.5 | Actian Python wheel vendored locally | `backend/vendor/actian_vectorai-0.1.0b2-py3-none-any.whl` | Claude | ✅ | Present in local vendor dir; **gitignored per Geri (hackathon Discord, 2026-04-15)** — each dev copies it from their own hackmamba clone. Setup steps added below. |
 | 1.6 | Frontend deps installed | `frontend/node_modules/` | Claude | ✅ | Via npm (348 pkgs). Bun lockfile retained for teammate flexibility. |
 | 2.1 | `requirements.txt` | `backend/requirements.txt` | Claude | ✅ | Installed + import smoke test green 2026-04-15. Pinned `transformers<5.0` after a 5.5.4/FlagEmbedding collision. |
-| 2.2 | Root `docker-compose.yml` | `docker-compose.yml` | **Stephen** | ⬜ | Mirror hackmamba compose but with `./backend/.vectordata` volume. Claude on standby to assist. |
+| 2.2 | Root `docker-compose.yml` | `docker-compose.yml` | **Stephen** | ✅ | Container up 2026-04-15. Sibling stopped, `trace-vectoraidb` on :50051, `./backend/.vectordata` mount populated (datastore.ini, vde.log), `health_check()` returns v1.0.0. |
 | 2.3 | Config constants | `backend/config.py` | Claude | ✅ | Written 2026-04-15. Exports `COLLECTION_NAME`, `VECTORS` (4 named specs), `VECTORAI_ADDR`, `RRF_K=60`. |
 | 2.4 | Pydantic schemas | `backend/schemas.py` | Claude | ✅ | Written + reviewed 2026-04-15. `CasePayload`, `SearchFilters` (`age_low/age_high`, flat `date_from/date_to`), `SearchResponse` (`total_matches`, `latency_ms`), `SearchResult` (camelCase for card props, `threshold` is `@computed_field`). Cross-field validators on age/date order. `IngestResponse` for Stephen. All 60 synthetic cases validate clean. |
 | 2.5 | Embedding model wrappers | `backend/embeddings.py` | **Vinh** | ⬜ | BGE-M3, SapBERT, CLIP loaders + `embed_text()`, `embed_image()`, `embed_text_clip()`. |
@@ -425,14 +425,18 @@ def build_filter(f: SearchFilters):
 Load `data/synthetic/cases.json`, build four named vectors per case, upsert to Actian.
 
 ```python
-# Pseudocode sketch:
-client = VectorAIClient(CONFIG.actian_host)
-client.collections.create_if_not_exists(CONFIG.collection_name, vectors_config={
-    "physical_text": VectorParams(size=CONFIG.physical_text_dim, distance=Distance.Cosine),
-    "physical_image": VectorParams(size=CONFIG.physical_image_dim, distance=Distance.Cosine),
-    "circumstances": VectorParams(size=CONFIG.circumstances_dim, distance=Distance.Cosine),
-    "clothing": VectorParams(size=CONFIG.clothing_dim, distance=Distance.Cosine),
-})
+# Pseudocode sketch (SDK shape verified against 0.1.0b2):
+with VectorAIClient(VECTORAI_ADDR) as client:
+    if not client.collections.exists(COLLECTION_NAME):
+        client.collections.create(
+            COLLECTION_NAME,
+            vectors_config={
+                "physical_text":  VectorParams(size=VECTORS["physical_text"].dim,  distance=Distance.Cosine),
+                "physical_image": VectorParams(size=VECTORS["physical_image"].dim, distance=Distance.Cosine),
+                "circumstances":  VectorParams(size=VECTORS["circumstances"].dim,  distance=Distance.Cosine),
+                "clothing":       VectorParams(size=VECTORS["clothing"].dim,       distance=Distance.Cosine),
+            },
+        )
 
 points = []
 for case in load_cases():
