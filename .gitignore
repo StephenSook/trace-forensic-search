@@ -167,3 +167,5 @@ backend/venv/
 .env.local
 .env.*.local
 
+DoraHacks Submission/
+.playwright-mcp/
