@@ -36,7 +36,7 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 2.4 | Pydantic schemas | `backend/schemas.py` | Claude | ✅ | Written + reviewed 2026-04-15. `CasePayload`, `SearchFilters` (`age_low/age_high`, flat `date_from/date_to`), `SearchResponse` (`total_matches`, `latency_ms`), `SearchResult` (camelCase for card props, `threshold` is `@computed_field`). Cross-field validators on age/date order. `IngestResponse` for Stephen. All 60 synthetic cases validate clean. |
 | 2.5 | Embedding model wrappers | `backend/embeddings.py` | **Vinh** | ⬜ | BGE-M3, SapBERT, CLIP loaders + `embed_text()`, `embed_image()`, `embed_text_clip()`. |
 | 2.6 | Filter DSL builder | `backend/filters.py` | **Vinh** | ⬜ | Builds `FilterBuilder` from request params; date filter uses `Field('date_epoch').between(...)` (O4). |
-| 2.7 | Ingest pipeline | `backend/ingest.py` | **Stephen** | ⬜ | Load synthetic JSON → compute 4 named vectors → upsert to `cases` collection. Depends on 2.3–2.5 (Vinh). |
+| 2.7 | Ingest pipeline | `backend/ingest.py` | **Stephen** | 🟡 scaffold ✅ | Scaffolded with injectable `Embedders` + 6 live tests green (against `trace-vectoraidb`). Flip to real vectors when Vinh's 2.5 lands. |
 | 2.8 | Hybrid search engine | `backend/search.py` | **Vinh** | ⬜ | Multi-vector fan-out search + RRF fusion + "Why This Matched" breakdown. |
 | 2.9 | FastAPI server | `backend/main.py` | **Vinh** | ⬜ | Endpoints: `POST /search`, `GET /case/{id}`, `GET /health`. CORS for :5173. |
 | 2.10 | Backend tests | `backend/tests/*.py` | Claude | ⬜ | Filter builder, dimensions, demo query integration. |
