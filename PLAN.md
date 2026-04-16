@@ -34,7 +34,7 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 2.2 | Root `docker-compose.yml` | `docker-compose.yml` | **Stephen** | ✅ | Hardened 2026-04-15. Image pinned by sha256 digest (no silent drift before demo), port published as `${VECTORAI_PORT:-50051}` for coexistence with sibling, bash `/dev/tcp` healthcheck so `docker compose up -d --wait` blocks until gRPC accepts. `trace-vectoraidb` reports `healthy` state. |
 | 2.3 | Config constants | `backend/config.py` | Claude | ✅ | Written 2026-04-15. Exports `COLLECTION_NAME`, `VECTORS` (4 named specs), `VECTORAI_ADDR`, `RRF_K=60`. |
 | 2.4 | Pydantic schemas | `backend/schemas.py` | Claude | ✅ | Written + reviewed 2026-04-15. `CasePayload`, `SearchFilters` (`age_low/age_high`, flat `date_from/date_to`), `SearchResponse` (`total_matches`, `latency_ms`), `SearchResult` (camelCase for card props, `threshold` is `@computed_field`). Cross-field validators on age/date order. `IngestResponse` for Stephen. All 60 synthetic cases validate clean. |
-| 2.5 | Embedding model wrappers | `backend/embeddings.py` | **Vinh** | ⬜ | BGE-M3, SapBERT, CLIP loaders + `embed_text()`, `embed_image()`, `embed_text_clip()`. |
+| 2.5 | Embedding model wrappers | `backend/embeddings.py` | **Vinh** | ✅ | Implemented 2026-04-15. 5 exports: `embed_text_sapbert` (768d), `embed_text_bge` (1024d), `embed_text_bge_batch`, `embed_text_clip` (512d), `embed_image_clip` (512d). Lazy model loading via `lru_cache`. L2-normalized (D7). SapBERT semantic bridge verified: 0.6164 cosine on PLAN.md demo pair (threshold 0.60). Device auto-detection (cuda>mps>cpu). |
 | 2.6 | Filter DSL builder | `backend/filters.py` | **Vinh** | ⬜ | Builds `FilterBuilder` from request params; date filter uses `Field('date_epoch').between(...)` (O4). |
 | 2.7 | Ingest pipeline | `backend/ingest.py` | **Stephen** | 🟡 scaffold ✅ | Scaffolded with injectable `Embedders` + 6 live tests green (against `trace-vectoraidb`). Flip to real vectors when Vinh's 2.5 lands. |
 | 2.8 | Hybrid search engine | `backend/search.py` | **Vinh** | ⬜ | Multi-vector fan-out search + RRF fusion + "Why This Matched" breakdown. |
@@ -389,6 +389,20 @@ def embed_image_clip(image_path_or_pil) -> list[float]: ...    # 512-dim
 
 **Commit:** `feat(backend): add embedding wrappers for SapBERT, BGE-M3, and CLIP`
 
+**Results (2026-04-15, Vinh):**
+
+| Test | Result | Pass? |
+|---|---|---|
+| `len(embed_text_sapbert("hello"))` | 768 | Yes |
+| `len(embed_text_bge("hello"))` | 1024 | Yes |
+| `len(embed_text_clip("hello"))` | 512 | Yes |
+| `embed_text_bge_batch(["hello","world"])` | 2 x 1024 | Yes |
+| L2 norm (all models) | 1.000000 | Yes |
+| SapBERT cosine: "eagle tattoo right forearm" vs "avian motif dermagraphic right ventral antebrachium" | **0.6164** (>= 0.60) | Yes |
+| SapBERT full-context physical_text pair | **0.6710** | Yes |
+| BGE-M3 same pair (comparison) | 0.5326 | N/A — confirms SapBERT is stronger for medical vocab |
+| Negative control (unrelated text) | 0.2454 | Yes — 0.37 gap |
+
 #### Task 2.6 — `backend/filters.py`
 
 Build an Actian `FilterBuilder` from a `SearchFilters` schema.
@@ -488,11 +502,20 @@ def search(req: SearchRequest) -> SearchResponse:
     # Embed query once per vector space
     q_physical = embed_text_sapbert(req.query)
     q_bge = embed_text_bge(req.query)
+    q_clip_text = embed_text_clip(req.query)  # cross-modal: text → image space
 
     # Fan out searches (same query text, different vector spaces)
     physical_results = client.points.search(
         CONFIG.collection_name,
         vector=q_physical, using="physical_text",
+        limit=CONFIG.per_vector_candidates, filter=filter_,
+    )
+    # Cross-modal: text query searches the CLIP image vector space so
+    # "eagle tattoo on right forearm" can match a tattoo *photo* even
+    # when the user uploads no image.  (Stephen review flag, 2026-04-15)
+    image_results = client.points.search(
+        CONFIG.collection_name,
+        vector=q_clip_text, using="physical_image",
         limit=CONFIG.per_vector_candidates, filter=filter_,
     )
     circumstances_results = client.points.search(
@@ -506,9 +529,12 @@ def search(req: SearchRequest) -> SearchResponse:
         limit=CONFIG.per_vector_candidates, filter=filter_,
     )
 
-    # Fuse client-side
+    # Fuse client-side (4 lists when image vectors exist, 3 otherwise)
+    result_lists = [physical_results, circumstances_results, clothing_results]
+    if image_results:
+        result_lists.append(image_results)
     fused = reciprocal_rank_fusion(
-        [physical_results, circumstances_results, clothing_results],
+        result_lists,
         limit=req.limit,
         ranking_constant_k=CONFIG.rrf_k,
     )
