@@ -17,7 +17,7 @@ interface TraceResultCardProps {
   genderEst: string;
   ageRange: string;
   discoveryDate: string;
-  namusLink?: string;
+  namusLink?: string | null;
   matchMappings: MatchMapping[];
 }
 

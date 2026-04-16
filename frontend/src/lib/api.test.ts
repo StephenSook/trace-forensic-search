@@ -121,7 +121,7 @@ describe("api client", () => {
     expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:8000/health");
   });
 
-  it("throws ApiError with FastAPI detail message on 4xx", async () => {
+  it("throws ApiError with FastAPI detail message and raw body on 4xx", async () => {
     fetchMock.mockResolvedValueOnce(err(422, { detail: "query: Field required" }));
 
     const promise = searchCases({ query: "" });
@@ -132,6 +132,7 @@ describe("api client", () => {
       name: "ApiError",
       status: 422,
       message: "query: Field required",
+      body: { detail: "query: Field required" },
     });
   });
 
@@ -142,6 +143,35 @@ describe("api client", () => {
       status: 500,
       message: "POST /search → 500",
     });
+  });
+
+  it("falls back to raw text when error body is not JSON (e.g. nginx HTML)", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response("Bad Gateway", { status: 502 }),
+    );
+
+    await expect(getHealth()).rejects.toMatchObject({
+      status: 502,
+      message: "GET /health → 502",
+      body: "Bad Gateway",
+    });
+  });
+
+  it("wraps network failures as ApiError with status 0", async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+
+    await expect(searchCases({ query: "x" })).rejects.toMatchObject({
+      name: "ApiError",
+      status: 0,
+      message: "Network error: Failed to fetch",
+    });
+  });
+
+  it("lets AbortError propagate unwrapped for TanStack Query cancellation", async () => {
+    const abortErr = new DOMException("The operation was aborted.", "AbortError");
+    fetchMock.mockRejectedValueOnce(abortErr);
+
+    await expect(searchCases({ query: "x" })).rejects.toBe(abortErr);
   });
 
   it("forwards AbortSignal to fetch so TanStack Query can cancel", async () => {
