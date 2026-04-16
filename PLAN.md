@@ -35,7 +35,7 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 2.3 | Config constants | `backend/config.py` | Claude | ✅ | Written 2026-04-15. Exports `COLLECTION_NAME`, `VECTORS` (4 named specs), `VECTORAI_ADDR`, `RRF_K=60`. |
 | 2.4 | Pydantic schemas | `backend/schemas.py` | Claude | ✅ | Written + reviewed 2026-04-15. `CasePayload`, `SearchFilters` (`age_low/age_high`, flat `date_from/date_to`), `SearchResponse` (`total_matches`, `latency_ms`), `SearchResult` (camelCase for card props, `threshold` is `@computed_field`). Cross-field validators on age/date order. `IngestResponse` for Stephen. All 60 synthetic cases validate clean. |
 | 2.5 | Embedding model wrappers | `backend/embeddings.py` | **Vinh** | ✅ | Implemented 2026-04-15. 5 exports: `embed_text_sapbert` (768d), `embed_text_bge` (1024d), `embed_text_bge_batch`, `embed_text_clip` (512d), `embed_image_clip` (512d). Lazy model loading via `lru_cache`. L2-normalized (D7). SapBERT semantic bridge verified: 0.6164 cosine on PLAN.md demo pair (threshold 0.60). Device auto-detection (cuda>mps>cpu). |
-| 2.6 | Filter DSL builder | `backend/filters.py` | **Vinh** | ⬜ | Builds `FilterBuilder` from request params; date filter uses `Field('date_epoch').between(...)` (O4). |
+| 2.6 | Filter DSL builder | `backend/filters.py` | **Vinh** | ✅ | Complete 2026-04-15. `build_filter(SearchFilters) -> Filter \| None` + `_iso_to_epoch` helper. 31 unit tests green — introspects `Filter.must[*].field` to verify clause keys, match values, range bounds, age-overlap semantics, epoch correctness, and ValueError on bad dates. |
 | 2.7 | Ingest pipeline | `backend/ingest.py` | **Stephen** | ✅ | Complete 2026-04-15. Injectable `Embedders` DI, UUID5 idempotent IDs, 9 live tests green. Real-vector ingest run: 60/60 cases with SapBERT+BGE-M3+CLIP embeddings in ~73s on MPS. |
 | 2.8 | Hybrid search engine | `backend/search.py` | **Vinh** | ⬜ | Multi-vector fan-out search + RRF fusion + "Why This Matched" breakdown. |
 | 2.9 | FastAPI server | `backend/main.py` | **Vinh** | ⬜ | Endpoints: `POST /search`, `GET /case/{id}`, `GET /health`. CORS for :5173. |
@@ -405,35 +405,47 @@ def embed_image_clip(image_path_or_pil) -> list[float]: ...    # 512-dim
 
 #### Task 2.6 — `backend/filters.py`
 
-Build an Actian `FilterBuilder` from a `SearchFilters` schema.
+**Problem:** Vector search alone returns semantically similar results from any state, age, decade. `filters.py` is the hard pre-filter that narrows candidates *before* vectors are compared — maps to the 30% "Use of Actian VectorAI DB" judging weight.
+
+**Design:** 1 public export, 1 private helper, ~40 lines, no classes.
 
 ```python
 from actian_vectorai import Field, FilterBuilder
-from .schemas import SearchFilters
+from schemas import SearchFilters
 
-def build_filter(f: SearchFilters):
-    builder = FilterBuilder()
-    if f.case_type is not None:
-        builder = builder.must(Field("case_type").eq(f.case_type))
-    if f.state:
-        builder = builder.must(Field("state").eq(f.state.upper()))
-    if f.sex:
-        builder = builder.must(Field("sex").any_of([f.sex, "Unknown"]))
-    # Age overlap: records where [age_low, age_high] intersects [q_low, q_high]
-    if f.age_low is not None:
-        builder = builder.must(Field("age_high").gte(f.age_low))
-    if f.age_high is not None:
-        builder = builder.must(Field("age_low").lte(f.age_high))
-    if f.date_from:
-        builder = builder.must(Field("date_epoch").gte(_iso_to_epoch(f.date_from)))
-    if f.date_to:
-        builder = builder.must(Field("date_epoch").lte(_iso_to_epoch(f.date_to)))
-    built = builder.build()
-    # FilterBuilder without any .must() may return None or raise; handle it
-    return built if _has_conditions(built) else None
+def _iso_to_epoch(date_str: str) -> int:
+    """'2019-10-14' → unix epoch (UTC)."""
+    ...
+
+def build_filter(filters: SearchFilters) -> Filter | None:
+    """Build Actian Filter from SearchFilters. Returns None if no fields set."""
+    # 1. Guard up front — all fields None → return None
+    # 2. For each non-None field, append .must() clause:
+    #    - case_type  → Field("case_type").eq(value)
+    #    - state      → Field("state").eq(value.upper())
+    #    - sex        → Field("sex").any_of([value, "Unknown"])
+    #    - age_low    → Field("age_high").gte(age_low)   # overlap semantics
+    #    - age_high   → Field("age_low").lte(age_high)   # overlap semantics
+    #    - date_from  → Field("date_epoch").gte(epoch)
+    #    - date_to    → Field("date_epoch").lte(epoch)
+    # 3. .build() → return Filter
+    ...
 ```
 
-**Acceptance tests** (`backend/tests/test_filters.py`) — parametrize 6+ cases: no filters → None; state-only; full filter set; sex=Male includes Unknown; age overlap logic; date range; invalid state length raises (caught by Pydantic before reaching this).
+**Flow in context:** `search.py` calls `build_filter()` once → passes the same `Filter | None` to all 4 vector fan-out `client.points.search()` calls as `filter=`.
+
+**Acceptance tests** (`backend/tests/test_filters.py`, ~60 lines, pure unit, no DB):
+
+| Test | Input | Assert |
+|---|---|---|
+| No filters | all `None` | returns `None` |
+| State only | `state="TN"` | `Filter` with one `.must()` |
+| Sex includes Unknown | `sex="Male"` | `.any_of(["Male", "Unknown"])` |
+| Age overlap (both) | `age_low=30, age_high=40` | `age_high >= 30` AND `age_low <= 40` |
+| Age one-sided | `age_low=25` only | `age_high >= 25` only |
+| Date range | `date_from/to` set | two epoch comparisons |
+| Full filter | all fields set | all 6 clause types |
+| `_iso_to_epoch` | `"2019-10-14"` | correct epoch (UTC) |
 
 **Commit:** `feat(backend): add filter DSL builder with age-range overlap semantics`
 
