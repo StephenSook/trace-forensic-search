@@ -27,12 +27,16 @@ const INITIAL_FORM: SearchFormState = {
   dateTo: "",
 };
 
-function buildRequest(form: SearchFormState): SearchRequest {
+export function buildRequest(form: SearchFormState): SearchRequest {
   const filters: SearchRequest["filters"] = {};
   if (form.sex) filters.sex = form.sex as "Male" | "Female" | "Unknown";
   if (form.state) filters.state = form.state;
-  if (form.ageLow) filters.age_low = parseInt(form.ageLow, 10);
-  if (form.ageHigh) filters.age_high = parseInt(form.ageHigh, 10);
+
+  const ageLow = parseInt(form.ageLow, 10);
+  if (!Number.isNaN(ageLow)) filters.age_low = ageLow;
+  const ageHigh = parseInt(form.ageHigh, 10);
+  if (!Number.isNaN(ageHigh)) filters.age_high = ageHigh;
+
   if (form.dateFrom) filters.date_from = form.dateFrom;
   if (form.dateTo) filters.date_to = form.dateTo;
 
@@ -62,6 +66,7 @@ const Index = () => {
   });
 
   const handleSubmit = () => {
+    if (mutation.isPending) return;
     if (!form.query.trim()) {
       toast.error("Enter a description before searching.");
       return;

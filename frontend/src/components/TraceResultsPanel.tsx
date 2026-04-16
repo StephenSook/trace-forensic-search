@@ -7,7 +7,7 @@ const mockResults = [
     caseId: "UP10294",
     title: "Unidentified Male (Found 2019)",
     confidence: 0.94,
-    threshold: "SIGMA_THRESHOLD:HIGH" as const,
+    threshold: "HIGH CONFIDENCE" as const,
     stateFound: "Tennessee",
     genderEst: "Male",
     ageRange: "30 - 45 Years",
@@ -24,7 +24,7 @@ const mockResults = [
     caseId: "UP9982",
     title: "Human Remains - Unspecified",
     confidence: 0.71,
-    threshold: "SIGMA_THRESHOLD:MED" as const,
+    threshold: "MEDIUM CONFIDENCE" as const,
     stateFound: "Tennessee",
     genderEst: "Indeterminate",
     ageRange: "25 - 40 Years",
@@ -43,7 +43,7 @@ interface TraceResultsPanelProps {
   error: Error | null;
 }
 
-const TraceResultsPanel = ({ data, isPending }: TraceResultsPanelProps) => {
+const TraceResultsPanel = ({ data, isPending, error }: TraceResultsPanelProps) => {
   const results = data?.results ?? mockResults;
   const matchCount = data?.total_matches ?? results.length;
   const hasSearched = data !== undefined;
@@ -75,8 +75,16 @@ const TraceResultsPanel = ({ data, isPending }: TraceResultsPanelProps) => {
         </div>
       )}
 
+      {/* Error state */}
+      {!isPending && error && (
+        <div className="mb-6 border border-destructive/50 rounded-md p-4 bg-destructive/5">
+          <span className="text-trace-label text-xs text-destructive block mb-1">QUERY_ERROR</span>
+          <p className="text-sm text-destructive/90">{error.message}</p>
+        </div>
+      )}
+
       {/* Empty state after a real search */}
-      {!isPending && hasSearched && results.length === 0 && (
+      {!isPending && hasSearched && !error && results.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Search size={32} className="text-muted-foreground" />
           <span className="text-trace-label text-xs">NO MATCHES FOUND</span>
