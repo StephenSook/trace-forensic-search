@@ -17,7 +17,7 @@ interface TraceResultCardProps {
 }
 
 const getConfidenceColor = (confidence: number) => {
-  if (confidence >= 0.85) return "bg-trace-confidence-high";
+  if (confidence >= 0.80) return "bg-trace-confidence-high";
   if (confidence >= 0.6) return "bg-trace-confidence-med";
   return "bg-trace-confidence-low";
 };

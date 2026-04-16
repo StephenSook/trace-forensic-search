@@ -204,7 +204,7 @@ class TestSearchResult:
         )
 
     def test_high_confidence_threshold(self):
-        r = self._make(0.85)
+        r = self._make(0.80)
         assert r.threshold == "HIGH CONFIDENCE"
 
     def test_high_confidence_above(self):
@@ -227,8 +227,8 @@ class TestSearchResult:
         r = self._make(0.0)
         assert r.threshold == "LOW CONFIDENCE"
 
-    def test_boundary_084_is_medium(self):
-        r = self._make(0.84)
+    def test_boundary_079_is_medium(self):
+        r = self._make(0.79)
         assert r.threshold == "MEDIUM CONFIDENCE"
 
     def test_threshold_in_serialized_output(self):

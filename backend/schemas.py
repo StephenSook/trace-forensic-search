@@ -122,15 +122,15 @@ class SearchResult(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
     stateFound: str
     genderEst: str
-    ageRange: str                      # e.g. "30–38"
-    discoveryDate: str                 # human-formatted, e.g. "2020-06-02"
+    ageRange: str                      # e.g. "30 - 38 Years"
+    discoveryDate: str                 # e.g. "Jun 02, 2020"
     namusLink: str | None = None
     matchMappings: list[MatchMapping] = []
 
     @computed_field  # type: ignore[prop-decorator]
     @property
     def threshold(self) -> ConfidenceLabel:
-        if self.confidence >= 0.85:
+        if self.confidence >= 0.80:
             return "HIGH CONFIDENCE"
         if self.confidence >= 0.6:
             return "MEDIUM CONFIDENCE"

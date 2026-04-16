@@ -92,12 +92,35 @@ BGE_M3_MODEL_ID = VECTORS["circumstances"].model_id
 # NB: default result limit lives on SearchRequest.limit (schemas.py).
 # Kept here only because ingest + health probes reference it.
 RRF_K = 60  # ranking_constant_k for reciprocal_rank_fusion
+PER_VECTOR_CANDIDATES = 25  # fan-out pool size before RRF fusion
 
 
 # ── Paths ─────────────────────────────────────────────────────────────
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SYNTHETIC_CASES_PATH = os.path.join(REPO_ROOT, "data", "synthetic", "cases.json")
+
+
+# ── US state abbreviation → full name (50 states + DC) ───────────────
+
+STATE_NAMES: dict[str, str] = {
+    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas",
+    "CA": "California", "CO": "Colorado", "CT": "Connecticut",
+    "DE": "Delaware", "DC": "District of Columbia", "FL": "Florida",
+    "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois",
+    "IN": "Indiana", "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky",
+    "LA": "Louisiana", "ME": "Maine", "MD": "Maryland",
+    "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota",
+    "MS": "Mississippi", "MO": "Missouri", "MT": "Montana",
+    "NE": "Nebraska", "NV": "Nevada", "NH": "New Hampshire",
+    "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York",
+    "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio",
+    "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania",
+    "RI": "Rhode Island", "SC": "South Carolina", "SD": "South Dakota",
+    "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont",
+    "VA": "Virginia", "WA": "Washington", "WV": "West Virginia",
+    "WI": "Wisconsin", "WY": "Wyoming",
+}
 
 
 # ── CORS (frontend origin) ────────────────────────────────────────────

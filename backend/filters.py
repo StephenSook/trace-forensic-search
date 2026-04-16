@@ -53,7 +53,8 @@ def build_filter(filters: SearchFilters | None) -> object | None:
         has_clause = True
 
     if filters.date_to is not None:
-        fb.must(Field("date_epoch").lte(_iso_to_epoch(filters.date_to)))
+        # End of day: add 86399s (23:59:59) so "2020-06-02" includes the full day
+        fb.must(Field("date_epoch").lte(_iso_to_epoch(filters.date_to) + 86399))
         has_clause = True
 
     if not has_clause:

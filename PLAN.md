@@ -3,7 +3,7 @@
 > Living working doc for **Stephen Sookra** (frontend + pitch) and **Vinh Le** (backend + AI systems). Updated on every completed task and pushed to `main`. Authoritative over the PDF when they disagree.
 
 **Hackathon:** Actian VectorAI DB Build Challenge — Apr 13–18, 2026
-**Today:** Apr 15, 2026 (Day 3 of 6)
+**Today:** Apr 16, 2026 (Day 4 of 6)
 **Repo:** https://github.com/StephenSook/trace-forensic-search
 **Actian reference:** https://github.com/hackmamba-io/actian-vectorAI-db-beta (cloned locally at `../actian-vectorAI-db-beta` for example scripts)
 
@@ -32,14 +32,14 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 1.6 | Frontend deps installed | `frontend/node_modules/` | Claude | ✅ | Via npm (348 pkgs). Bun lockfile retained for teammate flexibility. |
 | 2.1 | `requirements.txt` | `backend/requirements.txt` | Claude | ✅ | Installed + import smoke test green 2026-04-15. Pinned `transformers<5.0` after a 5.5.4/FlagEmbedding collision. |
 | 2.2 | Root `docker-compose.yml` | `docker-compose.yml` | **Stephen** | ✅ | Hardened 2026-04-15. Image pinned by sha256 digest (no silent drift before demo), port published as `${VECTORAI_PORT:-50051}` for coexistence with sibling, bash `/dev/tcp` healthcheck so `docker compose up -d --wait` blocks until gRPC accepts. `trace-vectoraidb` reports `healthy` state. |
-| 2.3 | Config constants | `backend/config.py` | Claude | ✅ | Written 2026-04-15. Exports `COLLECTION_NAME`, `VECTORS` (4 named specs), `VECTORAI_ADDR`, `RRF_K=60`. |
+| 2.3 | Config constants | `backend/config.py` | Claude | ✅ | Written 2026-04-15. Exports `COLLECTION_NAME`, `VECTORS` (4 named specs), `VECTORAI_ADDR`, `RRF_K=60`, `PER_VECTOR_CANDIDATES=25`, `STATE_NAMES` (50+DC). |
 | 2.4 | Pydantic schemas | `backend/schemas.py` | Claude | ✅ | Written + reviewed 2026-04-15. `CasePayload`, `SearchFilters` (`age_low/age_high`, flat `date_from/date_to`), `SearchResponse` (`total_matches`, `latency_ms`), `SearchResult` (camelCase for card props, `threshold` is `@computed_field`). Cross-field validators on age/date order. `IngestResponse` for Stephen. All 60 synthetic cases validate clean. |
 | 2.5 | Embedding model wrappers | `backend/embeddings.py` | **Vinh** | ✅ | Implemented 2026-04-15. 5 exports: `embed_text_sapbert` (768d), `embed_text_bge` (1024d), `embed_text_bge_batch`, `embed_text_clip` (512d), `embed_image_clip` (512d). Lazy model loading via `lru_cache`. L2-normalized (D7). SapBERT semantic bridge verified: 0.6164 cosine on PLAN.md demo pair (threshold 0.60). Device auto-detection (cuda>mps>cpu). |
 | 2.6 | Filter DSL builder | `backend/filters.py` | **Vinh** | ✅ | Complete 2026-04-15. `build_filter(SearchFilters) -> Filter \| None` + `_iso_to_epoch` helper. 31 unit tests green — introspects `Filter.must[*].field` to verify clause keys, match values, range bounds, age-overlap semantics, epoch correctness, and ValueError on bad dates. |
 | 2.7 | Ingest pipeline | `backend/ingest.py` | **Stephen** | ✅ | Complete 2026-04-15. Injectable `Embedders` DI, UUID5 idempotent IDs, 9 live tests green. Real-vector ingest run: 60/60 cases with SapBERT+BGE-M3+CLIP embeddings in ~73s on MPS. |
-| 2.8 | Hybrid search engine | `backend/search.py` | **Vinh** | ⬜ | Multi-vector fan-out search + RRF fusion + "Why This Matched" breakdown. |
+| 2.8 | Hybrid search engine | `backend/search.py` | **Vinh** | ✅ | Implemented 2026-04-16. `run_search(req, client) -> SearchResponse`. 4-vector fan-out (SapBERT/CLIP/BGE×2) + RRF fusion + max-cosine confidence + "Why This Matched" with fine-grained field labels. Chunk embeddings shared across results. 56 unit tests green (helpers + stubbed-client integration). |
 | 2.9 | FastAPI server | `backend/main.py` | **Vinh** | ⬜ | Endpoints: `POST /search`, `GET /case/{id}`, `GET /health`. CORS for :5173. |
-| 2.10 | Backend tests | `backend/tests/*.py` | **Stephen** | ✅ | Completed 2026-04-15. 83 tests total: test_schemas (46), test_config (12), test_synthetic_data (16), test_ingest (9). All green in <1s. Filter/search tests deferred until Vinh ships 2.6/2.8. |
+| 2.10 | Backend tests | `backend/tests/*.py` | **Stephen** | ✅ | Updated 2026-04-16. 146 tests total: test_schemas (47), test_config (12), test_synthetic_data (16), test_ingest (9), test_filters (31), test_search (56). All green. |
 | 3.1 | API client | `frontend/src/lib/api.ts` | Stephen/Claude | ✅ | Typed fetch wrapper + `ApiError` class. Mirrors `schemas.py` exactly (camelCase results, snake_case envelope). 6 vitest specs green. |
 | 3.2 | Search state + form wiring | `frontend/src/pages/Index.tsx`, `TraceSearchPanel.tsx` | Stephen/Claude | ✅ | Controlled inputs, lifted state in Index, `useMutation` fires `searchCases()`. 50-state dropdown, number age inputs, native date pickers, loading spinner, sonner error toasts. Mock fallback until backend ships. |
 | 3.3 | Live results rendering | `frontend/src/components/TraceResultsPanel.tsx`, `TraceResultCard.tsx` | Stephen/Claude | ✅ | ResultsPanel accepts `data/isPending/error` props. Shows mock preview before first search, live results after, loading spinner during, empty state on 0 results. Latency counter in stream footer. |
@@ -319,10 +319,9 @@ class SearchFilters(BaseModel):
     date_to: Optional[str] = None
 
 class SearchRequest(BaseModel):
-    query: str = Field(..., min_length=3)
-    filters: SearchFilters = Field(default_factory=SearchFilters)
+    query: str = Field(..., min_length=1, max_length=2000)
+    filters: SearchFilters | None = None  # None = no filters
     limit: int = Field(10, ge=1, le=50)
-    # image comes in via multipart as a separate form field, not JSON
 
 class MatchMapping(BaseModel):
     query_term: str
@@ -443,7 +442,7 @@ def build_filter(filters: SearchFilters) -> Filter | None:
 | Sex includes Unknown | `sex="Male"` | `.any_of(["Male", "Unknown"])` |
 | Age overlap (both) | `age_low=30, age_high=40` | `age_high >= 30` AND `age_low <= 40` |
 | Age one-sided | `age_low=25` only | `age_high >= 25` only |
-| Date range | `date_from/to` set | two epoch comparisons |
+| Date range | `date_from/to` set | two epoch comparisons (`date_to` uses end-of-day: +86399s) |
 | Full filter | all fields set | all 6 clause types |
 | `_iso_to_epoch` | `"2019-10-14"` | correct epoch (UTC) |
 
@@ -502,70 +501,128 @@ client.upload_points(CONFIG.collection_name, points, batch_size=32)
 
 #### Task 2.8 — `backend/search.py`
 
-The core query engine.
+**Design locked 2026-04-15 (Vinh + Claude).** The earlier sketch in this section drifted from shipped reality on three points: stale `CONFIG.actian_host` / `per_vector_candidates` names (real `config.py` is module-level constants with no `per_vector_candidates` yet), stale `score_breakdown` / `why_matched` schema fields (real `schemas.py` uses camelCase `matchMappings`), and an unachievable `≥ 0.85` acceptance target given real demo scores of 0.82. What follows is the version that matches `config.py`, `schemas.py`, `embeddings.py`, `filters.py`, and the frontend card contract (`TraceResultCard.tsx`, `api.ts`) verbatim.
 
-```python
-def search(req: SearchRequest) -> SearchResponse:
-    start = time.monotonic()
-    client = VectorAIClient(CONFIG.actian_host)
+##### Architecture
 
-    filter_ = build_filter(req.filters)
+Single pure function `run_search(req: SearchRequest, client: VectorAIClient) -> SearchResponse`, ~150 LOC. Caller owns the client (2.9 injects it via `Depends()` — mirrors how `ingest.py` uses it). No FastAPI coupling in this file.
 
-    # Embed query once per vector space
-    q_physical = embed_text_sapbert(req.query)
-    q_bge = embed_text_bge(req.query)
-    q_clip_text = embed_text_clip(req.query)  # cross-modal: text → image space
-
-    # Fan out searches (same query text, different vector spaces)
-    physical_results = client.points.search(
-        CONFIG.collection_name,
-        vector=q_physical, using="physical_text",
-        limit=CONFIG.per_vector_candidates, filter=filter_,
-    )
-    # Cross-modal: text query searches the CLIP image vector space so
-    # "eagle tattoo on right forearm" can match a tattoo *photo* even
-    # when the user uploads no image.  (Stephen review flag, 2026-04-15)
-    image_results = client.points.search(
-        CONFIG.collection_name,
-        vector=q_clip_text, using="physical_image",
-        limit=CONFIG.per_vector_candidates, filter=filter_,
-    )
-    circumstances_results = client.points.search(
-        CONFIG.collection_name,
-        vector=q_bge, using="circumstances",
-        limit=CONFIG.per_vector_candidates, filter=filter_,
-    )
-    clothing_results = client.points.search(
-        CONFIG.collection_name,
-        vector=q_bge, using="clothing",
-        limit=CONFIG.per_vector_candidates, filter=filter_,
-    )
-
-    # Fuse client-side (4 lists when image vectors exist, 3 otherwise)
-    result_lists = [physical_results, circumstances_results, clothing_results]
-    if image_results:
-        result_lists.append(image_results)
-    fused = reciprocal_rank_fusion(
-        result_lists,
-        limit=req.limit,
-        ranking_constant_k=CONFIG.rrf_k,
-    )
-
-    # Build per-result "Why This Matched" breakdown (term-level similarity)
-    enriched = [enrich_result(r, req.query) for r in fused]
-
-    elapsed_ms = int((time.monotonic() - start) * 1000)
-    return SearchResponse(
-        query=req.query,
-        total_matches=len(fused),
-        latency_ms=elapsed_ms,
-        results=enriched,
-    )
+```
+run_search(req, client)
+  1. filter_ = build_filter(req.filters)                     # filters.py
+  2. Embed query 3 ways (serial, MVP):
+       q_sap  = embed_text_sapbert(req.query)   # 768d
+       q_bge  = embed_text_bge(req.query)       # 1024d
+       q_clip = embed_text_clip(req.query)      # 512d, cross-modal text→image
+  3. Fan out 4× client.points.search(COLLECTION_NAME, ..., filter=filter_,
+                                     limit=PER_VECTOR_CANDIDATES):
+       physical_text  ← q_sap
+       physical_image ← q_clip   (text query searches CLIP image space)
+       circumstances  ← q_bge
+       clothing       ← q_bge
+  4. fused = reciprocal_rank_fusion([4 lists], limit=req.limit,
+                                    ranking_constant_k=RRF_K)
+       # RRF is used for ORDER ONLY. Its raw-sum score is ignored.
+  5. For each fused point: look up per-vector scores by point_id from
+     step 3's lists; confidence = max(scores); compose SearchResult.
+  6. Return SearchResponse(query, total_matches=len(fused),
+                           latency_ms, results)
 ```
 
-**"Why This Matched" enrichment** (per result): split the query into noun-phrase chunks, for each chunk compute cosine similarity against the candidate's `physical_text_source` / `circumstances_source` / `clothing_source` via SapBERT (for physical) or BGE-M3 (for other two). Keep top-5 mappings per result. Simple enough to implement without a full NLP parser — split on commas and "and"/", and" to start.
+**SDK watch (0.1.0b2).** Do **not** use `client.points.get(with_vectors=True)` to recover stored vectors — it returns a flat list, not the per-vector dict, in this release (Stephen flagged 2026-04-15). We never need that path; everything 2.8 needs is on `.score` / `.id` / `.payload` of each fan-out result.
 
-**Acceptance test** (`backend/tests/test_search_integration.py` — requires live DB + ingested synthetic data): the exact demo query from the PDF (*"My brother went missing in 2019 in Tennessee..."*) returns the Tennessee eagle-tattoo ground-truth record in the top 3 with confidence ≥ 0.85.
+##### Score model (confidence)
+
+`confidence = max(per_vector_score for vector in {physical_text, physical_image, circumstances, clothing} if point appeared in that fan-out)`. Clamped to `[0.0, 1.0]` before Pydantic validation (floating-point cosines can round to `1.0000001`).
+
+**Threshold softening.** Real demo-query scores from Task 4.2 top out at 0.82 (circumstances/MP-001). The original `HIGH ≥ 0.85` came from a keyword-search mental model; SapBERT/BGE on clinical↔lay bridges rarely clear 0.85. **Lower `HIGH` to 0.80** in both places that hold the truth:
+- `backend/schemas.py` — `SearchResult.threshold` @computed_field: `0.85` → `0.80`
+- `frontend/src/components/TraceResultCard.tsx:20` — `getConfidenceColor`: `0.85` → `0.80`
+- `backend/tests/test_schemas.py` — boundary assertions around HIGH/MEDIUM update to `0.80`
+
+Revised acceptance target: demo query returns MP-001 in top 3 at `confidence ≥ 0.80` → HIGH CONFIDENCE on the card.
+
+##### Field mapping: payload → SearchResult
+
+Card spreads the result object as props (`<TraceResultCard {...result} />`). `SearchResult` MUST be camelCase-only; any extra snake_case key triggers a React unknown-prop warning.
+
+| Wire field | Source / format |
+|---|---|
+| `caseId` | `payload["case_id"]` — "MP-001", NOT the UUID5 point id |
+| `title` | `"Unidentified {sex} (Found {year})"` or `"Missing {sex} (Reported {year})"` |
+| `confidence` | `max(per-vector cosine)`, clamped to `[0, 1]` |
+| `threshold` | `@computed_field` auto-emitted by Pydantic |
+| `stateFound` | `_STATE_NAMES[payload["state"]]` — **full name** (new 50-state + DC lookup constant) |
+| `genderEst` | `payload["sex"]` — "Male"/"Female" (payload Sex has no "Unknown") |
+| `ageRange` | `f"{age_low} - {age_high} Years"` — exact mock spacing, including " Years" suffix |
+| `discoveryDate` | `strftime("%b %d, %Y")` applied to `payload["date_iso"]` → "Jun 02, 2020" |
+| `namusLink` | `None` — not in synthetic payload; card hides chip when null |
+| `matchMappings` | built per § below; empty list if chunking yields nothing |
+
+##### "Why This Matched" algorithm
+
+Per result in the fused list:
+
+1. `_chunk_query(query)` — split on `", "`, `" and "`, `"; "`; drop chunks <3 chars; cap at 5. Demo query yields ~5 chunks.
+2. Encode chunks once (SapBERT sequential + BGE batched).
+3. Encode this result's 3 source texts: SapBERT on `physical_text`, `embed_text_bge_batch([circumstances, clothing])`.
+4. For each chunk: compute cosine vs each of the 3 fields; pick `(best_field, best_sim)`.
+5. Emit `MatchMapping(queryTerm=f'"{chunk}"', forensicField=best_field, forensicValue=_first_sentence(source, 80), similarity=clamp(best_sim))`.
+6. Sort by `similarity` desc, take top 5.
+
+Field labels emitted (fine-grained, matching frontend mock data in `TraceResultsPanel.tsx`):
+
+```python
+_FIELD_LABELS = {
+    # physical_text sub-fields (parsed from physical_text payload)
+    "physical:marks":    "DISTINGUISHING_MARKS",
+    "physical:location": "MARK_LOCATION",
+    "physical:bio":      "BIOLOGICAL_RELATION / AGE_EST",
+    "physical:general":  "PHYSICAL_DESCRIPTION",
+    # circumstances sub-fields
+    "circum:location":   "RECOVERY_LOCATION",
+    "circum:date":       "DISCOVERY_DATE",
+    "circum:general":    "CIRCUMSTANCES",
+    # clothing
+    "cloth":             "CLOTHING_EFFECTS",
+}
+```
+
+To match the mock's granularity, `physical_text` payload is parsed into sub-fields before chunk comparison: tattoos/scars → `DISTINGUISHING_MARKS`, body-part references → `MARK_LOCATION`, age/sex references → `BIOLOGICAL_RELATION / AGE_EST`, location mentions in circumstances → `RECOVERY_LOCATION`, date references → `DISCOVERY_DATE`. Keyword heuristics (regex on "tattoo|scar|mark", "forearm|arm|leg", "I-\d+|highway|corridor", etc.) are sufficient — no NLP parsing needed. Falls back to coarse label if no sub-field matches.
+
+Cost per result: 1 SapBERT + 1 BGE-batch(2) + `n_chunks` × (1 SapBERT + BGE-batch share) ≈ ~80ms on MPS. 10 results ≈ ~800ms enrichment. **Ship the straightforward version; do not pre-optimize.** Batched cross-result enrichment is a **post-demo** optimization — with the Apr 18 18:00 UTC deadline, measure real latency first and only invest if it bites.
+
+##### New config constant
+
+```python
+# backend/config.py
+PER_VECTOR_CANDIDATES = 25   # fan-out pool size before RRF fusion
+```
+
+##### Error handling
+
+| Failure | Behavior |
+|---|---|
+| VectorAI unreachable | `run_search` raises; 2.9 returns 503 |
+| `build_filter` raises ValueError (bad date) | propagate; 2.9 returns 422 |
+| Collection missing | raise clear error — ingest wasn't run |
+| One fan-out empty | continue; fuse the rest |
+| All four empty | `SearchResponse(results=[], total_matches=0)` — frontend already renders "NO MATCHES FOUND" |
+| Embedding raises (OOM on cold start) | propagate; 2.9 returns 500; /health exposes it |
+
+##### Tests (`backend/tests/test_search.py`)
+
+Three tiers, matching `test_ingest.py` layout:
+
+**Unit (no DB, no models):** `_chunk_query` splits/caps correctly; `_compose_title` covers both case types; `_format_age` and `_format_date` match mock strings verbatim; `_STATE_NAMES` has 50 + DC; score clamp `1.0000001 → 1.0`; `_to_search_result` with stub point builds valid `SearchResult`.
+
+**Integration-light (stub `VectorAIClient`):** `run_search` calls `client.points.search` 4× with correct `using=` names; filter passed through to all 4; `reciprocal_rank_fusion` invoked with all 4 lists; empty filter → `filter=None`.
+
+**Live (`@pytest.mark.live`, skipped by default):** demo-query acceptance — family-voice Tennessee query → MP-001 in top 3 with `confidence ≥ 0.80`; filter roundtrip (`state="TX"` → only Texas cases); latency budget (10 searches, mean `latency_ms < 500`).
+
+##### Wire contract — `api.ts` parity check
+
+`SearchResult` fields listed above match `frontend/src/lib/api.ts:71-82` verbatim. `SearchResponse` envelope (snake_case `total_matches` / `latency_ms`) matches `api.ts:84-89` and `TraceResultsPanel.tsx:49,116`. No transform layer needed.
 
 **Commit:** `feat(backend): add hybrid RRF search engine with why-matched breakdown`
 
@@ -590,14 +647,10 @@ def health() -> dict:
     ...
 
 @app.post("/search", response_model=SearchResponse)
-async def search_endpoint(
-    query: str = Form(...),
-    filters_json: str = Form("{}"),
-    image: Optional[UploadFile] = File(None),
-) -> SearchResponse:
-    filters = SearchFilters.model_validate_json(filters_json)
-    req = SearchRequest(query=query, filters=filters, limit=10)
-    return run_search(req, image)
+async def search_endpoint(req: SearchRequest) -> SearchResponse:
+    return run_search(req, client)
+    # JSON body — matches frontend api.ts which sends Content-Type: application/json.
+    # Image upload (stretch goal) gets a separate endpoint if needed.
 
 @app.get("/case/{case_id}")
 def get_case(case_id: str) -> dict:

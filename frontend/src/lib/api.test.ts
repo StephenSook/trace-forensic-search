@@ -43,10 +43,10 @@ describe("api client", () => {
           title: "Unidentified male, Tennessee",
           confidence: 0.91,
           threshold: "HIGH CONFIDENCE",
-          stateFound: "TN",
+          stateFound: "Tennessee",
           genderEst: "Male",
-          ageRange: "30–38",
-          discoveryDate: "2020-06-02",
+          ageRange: "30 - 38 Years",
+          discoveryDate: "Jun 02, 2020",
           namusLink: null,
           matchMappings: [
             {

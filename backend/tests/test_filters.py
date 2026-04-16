@@ -140,7 +140,8 @@ def test_date_range_both():
     assert len(gtes) == 1
     assert len(ltes) == 1
     assert gtes[0] == float(_iso_to_epoch("2019-01-01"))
-    assert ltes[0] == float(_iso_to_epoch("2020-12-31"))
+    # End-of-day: midnight + 86399s so the full last day is included
+    assert ltes[0] == float(_iso_to_epoch("2020-12-31") + 86399)
 
 
 def test_date_from_only():
@@ -154,7 +155,8 @@ def test_date_to_only():
     f = build_filter(SearchFilters(date_to="2022-03-01"))
     epoch_conds = [c for c in _must_conditions(f) if c.key == "date_epoch"]
     assert len(epoch_conds) == 1
-    assert epoch_conds[0].range.lte == float(_iso_to_epoch("2022-03-01"))
+    # End-of-day: midnight + 86399s (23:59:59) so the full day is included
+    assert epoch_conds[0].range.lte == float(_iso_to_epoch("2022-03-01") + 86399)
 
 
 # ── full filter ──────────────────────────────────────────────────────────
