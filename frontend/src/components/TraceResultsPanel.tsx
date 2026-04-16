@@ -1,12 +1,13 @@
-import { Wifi } from "lucide-react";
+import { Wifi, Search } from "lucide-react";
 import TraceResultCard from "./TraceResultCard";
+import type { SearchResponse } from "@/lib/api";
 
 const mockResults = [
   {
     caseId: "UP10294",
     title: "Unidentified Male (Found 2019)",
     confidence: 0.94,
-    threshold: "SIGMA_THRESHOLD:HIGH",
+    threshold: "SIGMA_THRESHOLD:HIGH" as const,
     stateFound: "Tennessee",
     genderEst: "Male",
     ageRange: "30 - 45 Years",
@@ -23,7 +24,7 @@ const mockResults = [
     caseId: "UP9982",
     title: "Human Remains - Unspecified",
     confidence: 0.71,
-    threshold: "SIGMA_THRESHOLD:MED",
+    threshold: "SIGMA_THRESHOLD:MED" as const,
     stateFound: "Tennessee",
     genderEst: "Indeterminate",
     ageRange: "25 - 40 Years",
@@ -36,7 +37,17 @@ const mockResults = [
   },
 ];
 
-const TraceResultsPanel = () => {
+interface TraceResultsPanelProps {
+  data?: SearchResponse;
+  isPending: boolean;
+  error: Error | null;
+}
+
+const TraceResultsPanel = ({ data, isPending }: TraceResultsPanelProps) => {
+  const results = data?.results ?? mockResults;
+  const matchCount = data?.total_matches ?? results.length;
+  const hasSearched = data !== undefined;
+
   return (
     <div className="flex-1 p-6 overflow-y-auto">
       {/* Results Header */}
@@ -44,7 +55,9 @@ const TraceResultsPanel = () => {
         <div>
           <span className="text-trace-header block mb-1">RESULTS_QUERY_LOG</span>
           <div className="flex items-baseline gap-3">
-            <span className="text-5xl font-mono font-bold text-foreground leading-none">12</span>
+            <span className="text-5xl font-mono font-bold text-foreground leading-none">
+              {isPending ? "—" : matchCount}
+            </span>
             <span className="text-trace-header">MATCHES FOUND</span>
           </div>
         </div>
@@ -54,22 +67,54 @@ const TraceResultsPanel = () => {
         </div>
       </div>
 
+      {/* Loading state */}
+      {isPending && (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <span className="text-trace-label text-xs">EXECUTING SEMANTIC QUERY...</span>
+        </div>
+      )}
+
+      {/* Empty state after a real search */}
+      {!isPending && hasSearched && results.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <Search size={32} className="text-muted-foreground" />
+          <span className="text-trace-label text-xs">NO MATCHES FOUND</span>
+          <p className="text-xs text-muted-foreground max-w-xs text-center">
+            Try broadening your description or removing filters.
+          </p>
+        </div>
+      )}
+
       {/* Result Cards */}
-      <div className="flex flex-col gap-4">
-        {mockResults.map((result) => (
-          <TraceResultCard key={result.caseId} {...result} />
-        ))}
-      </div>
+      {!isPending && results.length > 0 && (
+        <div className="flex flex-col gap-4">
+          {results.map((result) => (
+            <TraceResultCard key={result.caseId} {...result} />
+          ))}
+        </div>
+      )}
 
       {/* Stream end */}
-      <div className="mt-8 flex flex-col items-center gap-2">
-        <div className="flex items-center gap-3 w-full">
-          <div className="flex-1 border-t border-border" />
-          <span className="text-trace-label text-[0.6rem]">END OF SEMANTIC STREAM</span>
-          <div className="flex-1 border-t border-border" />
+      {!isPending && results.length > 0 && (
+        <div className="mt-8 flex flex-col items-center gap-2">
+          <div className="flex items-center gap-3 w-full">
+            <div className="flex-1 border-t border-border" />
+            <span className="text-trace-label text-[0.6rem]">END OF SEMANTIC STREAM</span>
+            <div className="flex-1 border-t border-border" />
+          </div>
+          {data && (
+            <span className="text-[0.55rem] text-muted-foreground font-mono tracking-wider">
+              QUERY_LATENCY:{data.latency_ms}MS
+            </span>
+          )}
+          {!data && (
+            <span className="text-[0.55rem] text-muted-foreground font-mono tracking-wider">
+              QUERY_COMPLETE:DEMO_PREVIEW
+            </span>
+          )}
         </div>
-        <span className="text-[0.55rem] text-muted-foreground font-mono tracking-wider">QUERY_COMPLETE:EAST_CORE_8</span>
-      </div>
+      )}
 
       {/* FAB */}
       <div className="fixed bottom-6 right-6">

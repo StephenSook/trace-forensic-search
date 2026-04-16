@@ -41,9 +41,9 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 2.9 | FastAPI server | `backend/main.py` | **Vinh** | ⬜ | Endpoints: `POST /search`, `GET /case/{id}`, `GET /health`. CORS for :5173. |
 | 2.10 | Backend tests | `backend/tests/*.py` | Claude | ⬜ | Filter builder, dimensions, demo query integration. |
 | 3.1 | API client | `frontend/src/lib/api.ts` | Stephen/Claude | ✅ | Typed fetch wrapper + `ApiError` class. Mirrors `schemas.py` exactly (camelCase results, snake_case envelope). 6 vitest specs green. |
-| 3.2 | Search state + form wiring | `frontend/src/pages/Index.tsx`, `TraceSearchPanel.tsx` | Stephen/Claude | ⬜ | Controlled inputs, lift state, submit → TanStack Query. |
-| 3.3 | Live results rendering | `frontend/src/components/TraceResultsPanel.tsx`, `TraceResultCard.tsx` | Stephen/Claude | ⬜ | Replace `mockResults` with query data. Keep exact visual shape. |
-| 3.4 | Loading/error states | same as 3.3 | Stephen/Claude | ⬜ | Skeleton rows, error toasts (sonner already installed). |
+| 3.2 | Search state + form wiring | `frontend/src/pages/Index.tsx`, `TraceSearchPanel.tsx` | Stephen/Claude | ✅ | Controlled inputs, lifted state in Index, `useMutation` fires `searchCases()`. 50-state dropdown, number age inputs, native date pickers, loading spinner, sonner error toasts. Mock fallback until backend ships. |
+| 3.3 | Live results rendering | `frontend/src/components/TraceResultsPanel.tsx`, `TraceResultCard.tsx` | Stephen/Claude | ✅ | ResultsPanel accepts `data/isPending/error` props. Shows mock preview before first search, live results after, loading spinner during, empty state on 0 results. Latency counter in stream footer. |
+| 3.4 | Loading/error states | same as 3.3 | Stephen/Claude | ✅ | Loading spinner + "EXECUTING SEMANTIC QUERY..." overlay, button disabled + spinner during pending, sonner toast on API/network error, "NO MATCHES FOUND" empty state with guidance. |
 | 4.1 | Synthetic cases | `data/synthetic/cases.json` + `generate_cases.py` | Claude | ✅ | 60 cases, 6 ground-truth pairs (MP/UP-001..006), 36 states, 2015-2024, demo pair wording verbatim, schema-validated 2026-04-15. |
 | 4.2 | Ingest run against real DB | runtime | Claude/Vinh | ⬜ | End-to-end: ingest → count == 60 → demo query hits correct record with ≥0.9 score. |
 | 5.1 | Demo script / talk track | separate doc TBD | Stephen | ⬜ | Sookra Methodology pitch opener. Not committed here. |

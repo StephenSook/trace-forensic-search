@@ -1,6 +1,37 @@
-import { Camera, Search } from "lucide-react";
+import { Camera, Search, Loader2 } from "lucide-react";
+import type { SearchFormState } from "@/pages/Index";
 
-const TraceSearchPanel = () => {
+const US_STATES = [
+  ["AL", "Alabama"], ["AK", "Alaska"], ["AZ", "Arizona"], ["AR", "Arkansas"],
+  ["CA", "California"], ["CO", "Colorado"], ["CT", "Connecticut"], ["DE", "Delaware"],
+  ["FL", "Florida"], ["GA", "Georgia"], ["HI", "Hawaii"], ["ID", "Idaho"],
+  ["IL", "Illinois"], ["IN", "Indiana"], ["IA", "Iowa"], ["KS", "Kansas"],
+  ["KY", "Kentucky"], ["LA", "Louisiana"], ["ME", "Maine"], ["MD", "Maryland"],
+  ["MA", "Massachusetts"], ["MI", "Michigan"], ["MN", "Minnesota"], ["MS", "Mississippi"],
+  ["MO", "Missouri"], ["MT", "Montana"], ["NE", "Nebraska"], ["NV", "Nevada"],
+  ["NH", "New Hampshire"], ["NJ", "New Jersey"], ["NM", "New Mexico"], ["NY", "New York"],
+  ["NC", "North Carolina"], ["ND", "North Dakota"], ["OH", "Ohio"], ["OK", "Oklahoma"],
+  ["OR", "Oregon"], ["PA", "Pennsylvania"], ["RI", "Rhode Island"], ["SC", "South Carolina"],
+  ["SD", "South Dakota"], ["TN", "Tennessee"], ["TX", "Texas"], ["UT", "Utah"],
+  ["VT", "Vermont"], ["VA", "Virginia"], ["WA", "Washington"], ["WV", "West Virginia"],
+  ["WI", "Wisconsin"], ["WY", "Wyoming"],
+] as const;
+
+interface TraceSearchPanelProps {
+  form: SearchFormState;
+  onFieldChange: (field: keyof SearchFormState, value: string) => void;
+  onSubmit: () => void;
+  isPending: boolean;
+}
+
+const TraceSearchPanel = ({ form, onFieldChange, onSubmit, isPending }: TraceSearchPanelProps) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      onSubmit();
+    }
+  };
+
   return (
     <div className="w-[420px] shrink-0 p-6 overflow-y-auto border-r border-border">
       {/* Title */}
@@ -18,6 +49,9 @@ const TraceSearchPanel = () => {
       <div className="mb-6">
         <label className="text-trace-label block mb-2">DESCRIBE WHO YOU'RE LOOKING FOR</label>
         <textarea
+          value={form.query}
+          onChange={(e) => onFieldChange("query", e.target.value)}
+          onKeyDown={handleKeyDown}
           className="w-full h-40 bg-input border border-border rounded-md p-3 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-ring font-sans"
           placeholder="e.g. My brother, 34, eagle tattoo on his right forearm, last seen near a Tennessee highway in 2019..."
         />
@@ -41,19 +75,28 @@ const TraceSearchPanel = () => {
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
           <label className="text-trace-label block mb-2">SEX</label>
-          <select className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring appearance-none">
-            <option>Male</option>
-            <option>Female</option>
-            <option>Unknown</option>
+          <select
+            value={form.sex}
+            onChange={(e) => onFieldChange("sex", e.target.value)}
+            className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring appearance-none"
+          >
+            <option value="">Any</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Unknown">Unknown</option>
           </select>
         </div>
         <div>
           <label className="text-trace-label block mb-2">STATE</label>
-          <select className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring appearance-none">
-            <option>Tennessee</option>
-            <option>Alabama</option>
-            <option>Georgia</option>
-            <option>Kentucky</option>
+          <select
+            value={form.state}
+            onChange={(e) => onFieldChange("state", e.target.value)}
+            className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring appearance-none"
+          >
+            <option value="">Any</option>
+            {US_STATES.map(([code, name]) => (
+              <option key={code} value={code}>{name}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -63,13 +106,21 @@ const TraceSearchPanel = () => {
         <label className="text-trace-label block mb-2">AGE RANGE</label>
         <div className="flex items-center gap-3">
           <input
-            type="text"
+            type="number"
+            min={0}
+            max={120}
+            value={form.ageLow}
+            onChange={(e) => onFieldChange("ageLow", e.target.value)}
             placeholder="Min"
             className="flex-1 bg-input border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           />
           <span className="text-muted-foreground">—</span>
           <input
-            type="text"
+            type="number"
+            min={0}
+            max={120}
+            value={form.ageHigh}
+            onChange={(e) => onFieldChange("ageHigh", e.target.value)}
             placeholder="Max"
             className="flex-1 bg-input border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           />
@@ -81,23 +132,38 @@ const TraceSearchPanel = () => {
         <label className="text-trace-label block mb-2">DATE RANGE</label>
         <div className="flex items-center gap-3">
           <input
-            type="text"
-            placeholder="mm/dd/yyyy"
+            type="date"
+            value={form.dateFrom}
+            onChange={(e) => onFieldChange("dateFrom", e.target.value)}
             className="flex-1 bg-input border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           />
           <span className="text-muted-foreground">—</span>
           <input
-            type="text"
-            placeholder="mm/dd/yyyy"
+            type="date"
+            value={form.dateTo}
+            onChange={(e) => onFieldChange("dateTo", e.target.value)}
             className="flex-1 bg-input border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
       </div>
 
       {/* Execute Button */}
-      <button className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-md py-3 font-mono text-sm font-semibold tracking-wider uppercase hover:bg-primary/90 transition-colors">
-        <Search size={16} />
-        EXECUTE SEMANTIC QUERY
+      <button
+        onClick={onSubmit}
+        disabled={isPending}
+        className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-md py-3 font-mono text-sm font-semibold tracking-wider uppercase hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {isPending ? (
+          <>
+            <Loader2 size={16} className="animate-spin" />
+            SEARCHING...
+          </>
+        ) : (
+          <>
+            <Search size={16} />
+            EXECUTE SEMANTIC QUERY
+          </>
+        )}
       </button>
 
       {/* Disclaimer */}
