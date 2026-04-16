@@ -1,18 +1,12 @@
 import { useState } from "react";
 import { ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
-
-interface MatchMapping {
-  queryTerm: string;
-  forensicField: string;
-  forensicValue: string;
-  similarity: number;
-}
+import type { ConfidenceLabel, MatchMapping } from "@/lib/api";
 
 interface TraceResultCardProps {
   caseId: string;
   title: string;
   confidence: number;
-  threshold: string;
+  threshold: ConfidenceLabel | string;
   stateFound: string;
   genderEst: string;
   ageRange: string;
@@ -36,9 +30,10 @@ const TraceResultCard = ({
   genderEst,
   ageRange,
   discoveryDate,
+  namusLink,
   matchMappings,
 }: TraceResultCardProps) => {
-  const [expanded, setExpanded] = useState(caseId === "UP10294");
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="border border-border rounded-md bg-card overflow-hidden">
@@ -47,9 +42,11 @@ const TraceResultCard = ({
         <div className="flex items-start justify-between mb-1">
           <div className="flex items-center gap-3">
             <span className="text-trace-label">CASE ID: {caseId}</span>
-            <a href="#" className="text-trace-label flex items-center gap-1 hover:text-primary transition-colors">
-              NAMUS_LINK <ExternalLink size={10} />
-            </a>
+            {namusLink && (
+              <a href={namusLink} target="_blank" rel="noopener noreferrer" className="text-trace-label flex items-center gap-1 hover:text-primary transition-colors">
+                NAMUS_LINK <ExternalLink size={10} />
+              </a>
+            )}
           </div>
           <div className="text-right">
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono font-bold text-primary-foreground ${getConfidenceColor(confidence)}`}>

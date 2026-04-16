@@ -44,9 +44,10 @@ interface TraceResultsPanelProps {
 }
 
 const TraceResultsPanel = ({ data, isPending, error }: TraceResultsPanelProps) => {
-  const results = data?.results ?? mockResults;
-  const matchCount = data?.total_matches ?? results.length;
   const hasSearched = data !== undefined;
+  const showMocks = !hasSearched && !isPending && !error;
+  const results = hasSearched ? (data.results ?? []) : (showMocks ? mockResults : []);
+  const matchCount = hasSearched ? (data.total_matches ?? results.length) : results.length;
 
   return (
     <div className="flex-1 p-6 overflow-y-auto">
@@ -83,8 +84,8 @@ const TraceResultsPanel = ({ data, isPending, error }: TraceResultsPanelProps) =
         </div>
       )}
 
-      {/* Empty state after a real search */}
-      {!isPending && hasSearched && !error && results.length === 0 && (
+      {/* Empty state after a real search with no results */}
+      {!isPending && !error && hasSearched && results.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Search size={32} className="text-muted-foreground" />
           <span className="text-trace-label text-xs">NO MATCHES FOUND</span>
