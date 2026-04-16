@@ -14,10 +14,28 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _int_env(name: str, default: int) -> int:
+    """Parse an int env var with a loud, specific error on bad input.
+
+    Bare `int(os.getenv(...))` crashes with an opaque `ValueError` at
+    import time if the env is malformed — painful to debug when three
+    services all load the same config.
+    """
+    raw = os.getenv(name)
+    if raw is None or raw == "":
+        return default
+    try:
+        return int(raw)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"Env var {name!r}={raw!r} is not a valid integer"
+        ) from exc
+
+
 # ── Actian VectorAI DB ────────────────────────────────────────────────
 
 VECTORAI_HOST = os.getenv("VECTORAI_HOST", "localhost")
-VECTORAI_PORT = int(os.getenv("VECTORAI_PORT", "50051"))
+VECTORAI_PORT = _int_env("VECTORAI_PORT", 50051)
 VECTORAI_ADDR = f"{VECTORAI_HOST}:{VECTORAI_PORT}"
 
 
@@ -71,7 +89,8 @@ BGE_M3_MODEL_ID = VECTORS["circumstances"].model_id
 
 # ── Search defaults ───────────────────────────────────────────────────
 
-DEFAULT_LIMIT = 10
+# NB: default result limit lives on SearchRequest.limit (schemas.py).
+# Kept here only because ingest + health probes reference it.
 RRF_K = 60  # ranking_constant_k for reciprocal_rank_fusion
 
 

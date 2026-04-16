@@ -33,7 +33,7 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 2.1 | `requirements.txt` | `backend/requirements.txt` | Claude | ✅ | Installed + import smoke test green 2026-04-15. Pinned `transformers<5.0` after a 5.5.4/FlagEmbedding collision. |
 | 2.2 | Root `docker-compose.yml` | `docker-compose.yml` | **Stephen** | ⬜ | Mirror hackmamba compose but with `./backend/.vectordata` volume. Claude on standby to assist. |
 | 2.3 | Config constants | `backend/config.py` | Claude | ✅ | Written 2026-04-15. Exports `COLLECTION_NAME`, `VECTORS` (4 named specs), `VECTORAI_ADDR`, `RRF_K=60`. |
-| 2.4 | Pydantic schemas | `backend/schemas.py` | Claude | ✅ | Written 2026-04-15. `CasePayload`, `SearchRequest/Response`, `MatchMapping` — shape matches `TraceResultCard` props. |
+| 2.4 | Pydantic schemas | `backend/schemas.py` | Claude | ✅ | Written + reviewed 2026-04-15. `CasePayload`, `SearchFilters` (`age_low/age_high`, flat `date_from/date_to`), `SearchResponse` (`total_matches`, `latency_ms`), `SearchResult` (camelCase for card props, `threshold` is `@computed_field`). Cross-field validators on age/date order. `IngestResponse` for Stephen. All 60 synthetic cases validate clean. |
 | 2.5 | Embedding model wrappers | `backend/embeddings.py` | **Vinh** | ⬜ | BGE-M3, SapBERT, CLIP loaders + `embed_text()`, `embed_image()`, `embed_text_clip()`. |
 | 2.6 | Filter DSL builder | `backend/filters.py` | **Vinh** | ⬜ | Builds `FilterBuilder` from request params; date filter uses `Field('date_epoch').between(...)` (O4). |
 | 2.7 | Ingest pipeline | `backend/ingest.py` | **Stephen** | ⬜ | Load synthetic JSON → compute 4 named vectors → upsert to `cases` collection. Depends on 2.3–2.5 (Vinh). |
@@ -615,7 +615,9 @@ const { data, isLoading, error } = useQuery({
 
 #### Task 3.3 — Live results rendering
 
-Replace `mockResults` array in `TraceResultsPanel.tsx` with `data?.results`. Map API response fields onto `TraceResultCardProps`. **Do not change any styles, classes, or component structure** — only replace the data source.
+Replace `mockResults` array in `TraceResultsPanel.tsx` with `data?.results`. Map API response fields onto `TraceResultCardProps` — `schemas.SearchResult` already uses camelCase matching the props exactly, so this is a pass-through. **Do not change any styles, classes, or component structure** — only replace the data source.
+
+> **TODO (Stephen, Phase 3):** `TraceResultCard.tsx` line 50 hardcodes `href="#"` for the NAMUS_LINK. Wire it to `namusLink` prop and hide the chip when `namusLink` is null.
 
 **Commit:** `feat(frontend): render live API results in TraceResultsPanel`
 

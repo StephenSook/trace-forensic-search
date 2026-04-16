@@ -1,20 +1,36 @@
 """Pydantic models for Trace's FastAPI surface.
 
-Kept small and UI-shaped: request/response types here mirror the props
-the frontend components already consume (see
-`frontend/src/components/TraceResultCard.tsx`). The ingest-side case
-shape is also declared here so ingest.py and search.py agree on the
-payload contract with zero drift.
+Two shapes live here and are deliberately different:
+
+    * `CasePayload` — snake_case. This is what we store in Actian as
+      `point.payload` and what ingest.py / search.py pass around in
+      Python. Matches PLAN.md § 2.3.
+
+    * `SearchResult` / `MatchMapping` — camelCase. These are the wire
+      shape the React card component already consumes as props (see
+      `frontend/src/components/TraceResultCard.tsx`). Keeping the wire
+      contract aligned to the component props means zero runtime
+      transform in the frontend.
+
+Filter/response envelope field names mirror PLAN.md § 2.4 exactly so
+Vinh's filter-builder (PLAN.md § 2.6) wires up without drift.
 """
 from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field, model_validator
 
 
 CaseType = Literal["missing", "unidentified"]
 Sex = Literal["Male", "Female"]
+# Filter-side sex allows "Unknown" — many records don't have it pinned.
+SexFilter = Literal["Male", "Female", "Unknown"]
+
+ConfidenceLabel = Literal["HIGH CONFIDENCE", "MEDIUM CONFIDENCE", "LOW CONFIDENCE"]
+
+_ISO_DATE_RE = r"^\d{4}-\d{2}-\d{2}$"
+_STATE_RE = r"^[A-Z]{2}$"
 
 
 # ── Canonical case payload (what lives in Actian as point.payload) ────
@@ -28,32 +44,56 @@ class CasePayload(BaseModel):
     sex: Sex
     age_low: int = Field(ge=0, le=120)
     age_high: int = Field(ge=0, le=120)
-    state: str = Field(min_length=2, max_length=2)  # 2-letter US code
+    state: str = Field(pattern=_STATE_RE)
 
     # Dates: store both per O4. Filter against date_epoch, display date_iso.
     date_epoch: int
-    date_iso: str  # "YYYY-MM-DD"
+    date_iso: str = Field(pattern=_ISO_DATE_RE)
 
     physical_text: str
     circumstances: str
     clothing: str
     image_url: str | None = None
 
+    @model_validator(mode="after")
+    def _check_age_order(self) -> "CasePayload":
+        if self.age_low > self.age_high:
+            raise ValueError(
+                f"age_low ({self.age_low}) must be ≤ age_high ({self.age_high})"
+            )
+        return self
+
 
 # ── /search request ───────────────────────────────────────────────────
 
-class DateRange(BaseModel):
-    start_iso: str | None = None   # "YYYY-MM-DD"
-    end_iso: str | None = None
-
-
 class SearchFilters(BaseModel):
     case_type: CaseType | None = None
-    sex: Sex | None = None
-    state: str | None = None
-    age_min: int | None = Field(default=None, ge=0, le=120)
-    age_max: int | None = Field(default=None, ge=0, le=120)
-    date: DateRange | None = None
+    sex: SexFilter | None = None
+    state: str | None = Field(default=None, pattern=_STATE_RE)
+    age_low: int | None = Field(default=None, ge=0, le=120)
+    age_high: int | None = Field(default=None, ge=0, le=120)
+    date_from: str | None = Field(default=None, pattern=_ISO_DATE_RE)
+    date_to: str | None = Field(default=None, pattern=_ISO_DATE_RE)
+
+    @model_validator(mode="after")
+    def _check_ranges(self) -> "SearchFilters":
+        if (
+            self.age_low is not None
+            and self.age_high is not None
+            and self.age_low > self.age_high
+        ):
+            raise ValueError(
+                f"age_low ({self.age_low}) must be ≤ age_high ({self.age_high})"
+            )
+        if (
+            self.date_from is not None
+            and self.date_to is not None
+            and self.date_from > self.date_to
+        ):
+            raise ValueError(
+                f"date_from ({self.date_from}) must be ≤ date_to ({self.date_to})"
+            )
+        return self
 
 
 class SearchRequest(BaseModel):
@@ -64,7 +104,8 @@ class SearchRequest(BaseModel):
 
 # ── /search response ──────────────────────────────────────────────────
 #
-# Shape deliberately mirrors TraceResultCardProps (frontend).
+# camelCase on purpose — mirrors TraceResultCardProps so the card can
+# consume results without a transform layer.
 
 class MatchMapping(BaseModel):
     """One row of the 'Why This Matched' table."""
@@ -79,7 +120,6 @@ class SearchResult(BaseModel):
     caseId: str
     title: str
     confidence: float = Field(ge=0.0, le=1.0)
-    threshold: str                     # e.g. "HIGH CONFIDENCE"
     stateFound: str
     genderEst: str
     ageRange: str                      # e.g. "30–38"
@@ -87,11 +127,20 @@ class SearchResult(BaseModel):
     namusLink: str | None = None
     matchMappings: list[MatchMapping] = []
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def threshold(self) -> ConfidenceLabel:
+        if self.confidence >= 0.85:
+            return "HIGH CONFIDENCE"
+        if self.confidence >= 0.6:
+            return "MEDIUM CONFIDENCE"
+        return "LOW CONFIDENCE"
+
 
 class SearchResponse(BaseModel):
     query: str
-    total: int
-    took_ms: int
+    total_matches: int
+    latency_ms: int
     results: list[SearchResult]
 
 
@@ -99,6 +148,15 @@ class SearchResponse(BaseModel):
 
 class CaseDetailResponse(BaseModel):
     case: CasePayload
+
+
+# ── /ingest response (used by Stephen's ingest path) ──────────────────
+
+class IngestResponse(BaseModel):
+    collection: str
+    ingested: int
+    skipped: int = 0
+    took_ms: int
 
 
 # ── /health ───────────────────────────────────────────────────────────
