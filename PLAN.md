@@ -40,7 +40,7 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 2.8 | Hybrid search engine | `backend/search.py` | **Vinh** | ⬜ | Multi-vector fan-out search + RRF fusion + "Why This Matched" breakdown. |
 | 2.9 | FastAPI server | `backend/main.py` | **Vinh** | ⬜ | Endpoints: `POST /search`, `GET /case/{id}`, `GET /health`. CORS for :5173. |
 | 2.10 | Backend tests | `backend/tests/*.py` | Claude | ⬜ | Filter builder, dimensions, demo query integration. |
-| 3.1 | API client | `frontend/src/lib/api.ts` | Stephen/Claude | ⬜ | Typed fetch wrapper for `POST /search` and `GET /case/{id}`. |
+| 3.1 | API client | `frontend/src/lib/api.ts` | Stephen/Claude | ✅ | Typed fetch wrapper + `ApiError` class. Mirrors `schemas.py` exactly (camelCase results, snake_case envelope). 6 vitest specs green. |
 | 3.2 | Search state + form wiring | `frontend/src/pages/Index.tsx`, `TraceSearchPanel.tsx` | Stephen/Claude | ⬜ | Controlled inputs, lift state, submit → TanStack Query. |
 | 3.3 | Live results rendering | `frontend/src/components/TraceResultsPanel.tsx`, `TraceResultCard.tsx` | Stephen/Claude | ⬜ | Replace `mockResults` with query data. Keep exact visual shape. |
 | 3.4 | Loading/error states | same as 3.3 | Stephen/Claude | ⬜ | Skeleton rows, error toasts (sonner already installed). |
