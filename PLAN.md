@@ -46,7 +46,7 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 3.4 | Loading/error states | same as 3.3 | Stephen/Claude | ✅ | Loading spinner + "EXECUTING SEMANTIC QUERY..." overlay, button disabled + spinner during pending, sonner toast on API/network error, "NO MATCHES FOUND" empty state with guidance. Cold-reviewed 2026-04-15: 5 issues found + fixed (namusLink, duplicate interface, hardcoded expansion, mock threshold alignment, type tightening). |
 | 4.1 | Synthetic cases | `data/synthetic/cases.json` + `generate_cases.py` | Claude | ✅ | 60 cases, 6 ground-truth pairs (MP/UP-001..006), 36 states, 2015-2024, demo pair wording verbatim, schema-validated 2026-04-15. |
 | 4.2 | Ingest run against real DB | runtime | **Stephen** | ✅ | Completed 2026-04-15. 60 points in `cases` collection with real embeddings. Demo query scores: circumstances 0.82 (MP-001), physical_text 0.65 (UP-001). Both vector spaces return semantically correct results. |
-| 5.1 | Demo script / talk track | separate doc TBD | Stephen | ⬜ | Sookra Methodology pitch opener. Not committed here. |
+| 5.1 | Demo script / talk track | `DEMO_SCRIPT.md` | Stephen | ✅ | Completed 2026-04-15. 3:30–4:00 two-speaker script with Stephen/Vinh split, backup narrative, format contingencies, scoring-rubric callouts, and Q&A appendix. |
 | 5.2 | Loom demo video (3–5 min) | external | Stephen | ⬜ | Day 5 deliverable. |
 | 5.3 | DoraHacks submission write-up | external | Stephen | ⬜ | Day 5 deliverable. |
 | 5.4 | README polish for judges | `README.md` | Stephen | ⬜ | Setup instructions + demo query. |
