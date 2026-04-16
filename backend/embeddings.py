@@ -22,16 +22,22 @@ DEVICE = (
     else "mps" if hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
     else "cpu"
 )
+"""Torch device for inference: cuda > mps > cpu, auto-detected at import time."""
 
 
 # ── Internals ────────────────────────────────────────────────────────
 
 def _l2(v: np.ndarray) -> list[float]:
+    """L2-normalize a vector to unit length and return as a Python list.
+
+    Returns the zero vector unchanged to avoid division by zero.
+    """
     norm = np.linalg.norm(v)
     return (v / norm if norm > 0 else v).tolist()
 
 
 def _fetch_image(source: str) -> Image.Image:
+    """Load a PIL Image from a local file path or HTTP(S) URL, converted to RGB."""
     if source.startswith(("http://", "https://")):
         r = requests.get(source, timeout=30)
         r.raise_for_status()
@@ -43,6 +49,7 @@ def _fetch_image(source: str) -> Image.Image:
 
 @functools.lru_cache(maxsize=1)
 def _sapbert():
+    """Lazy-load SapBERT tokenizer + model (cached after first call)."""
     from transformers import AutoModel, AutoTokenizer
     tok = AutoTokenizer.from_pretrained(SAPBERT_MODEL_ID)
     mdl = AutoModel.from_pretrained(SAPBERT_MODEL_ID).to(DEVICE).eval()
@@ -63,6 +70,7 @@ def embed_text_sapbert(text: str) -> list[float]:
 
 @functools.lru_cache(maxsize=1)
 def _bge():
+    """Lazy-load BGE-M3 model (cached after first call). Uses fp16 on GPU/MPS."""
     from FlagEmbedding import BGEM3FlagModel
     return BGEM3FlagModel(BGE_M3_MODEL_ID, use_fp16=(DEVICE != "cpu"))
 
@@ -86,6 +94,7 @@ def embed_text_bge_batch(texts: list[str]) -> list[list[float]]:
 
 @functools.lru_cache(maxsize=1)
 def _clip():
+    """Lazy-load CLIP processor + model (cached after first call)."""
     from transformers import CLIPModel, CLIPProcessor
     proc = CLIPProcessor.from_pretrained(CLIP_MODEL_ID)
     mdl = CLIPModel.from_pretrained(CLIP_MODEL_ID).to(DEVICE).eval()
