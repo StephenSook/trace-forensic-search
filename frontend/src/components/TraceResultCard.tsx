@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
 import type { ConfidenceLabel, MatchMapping } from "@/lib/api";
 
@@ -112,9 +113,12 @@ const TraceResultCard = ({
 
       {/* Footer */}
       <div className="flex justify-end p-4 pt-0">
-        <button className="border border-border rounded-md px-4 py-2 text-xs font-mono tracking-wider uppercase text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors">
+        <Link
+          to={`/case/${encodeURIComponent(caseId)}`}
+          className="border border-border rounded-md px-4 py-2 text-xs font-mono tracking-wider uppercase text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+        >
           VIEW FULL CASE FILE
-        </button>
+        </Link>
       </div>
     </div>
   );
