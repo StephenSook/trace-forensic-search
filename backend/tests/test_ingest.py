@@ -107,7 +107,6 @@ def test_run_ingest_full_pipeline(actian_client, fake_embedders):
 
     assert resp.collection == COLLECTION_NAME
     assert resp.ingested == 60
-    assert resp.skipped == 0
     assert resp.took_ms > 0
 
     # Live verification
@@ -141,4 +140,84 @@ def test_run_ingest_is_idempotent(actian_client, fake_embedders):
     assert actian_client.points.count(COLLECTION_NAME) == 60
 
     run_ingest(actian_client, cases, fake_embedders)
+    assert actian_client.points.count(COLLECTION_NAME) == 60
+
+
+def test_point_id_for_is_stable_uuid5():
+    """The case_id → UUID mapping must be deterministic across runs.
+
+    If the namespace UUID ever drifts, every prior ingest's points are
+    orphaned. Hardcoding the expected UUID makes that change fail loudly.
+    """
+    import uuid
+
+    from ingest import point_id_for
+
+    pid = point_id_for("MP-001")
+    # Parses as a valid UUID
+    parsed = uuid.UUID(pid)
+    assert parsed.version == 5
+    # Stable across runs and processes
+    assert pid == "3141424b-bcd7-57dd-9080-ff5bd197ab32"
+    assert point_id_for("UP-003") == "82a840e0-d4f8-57f2-a1d5-89cb314d1020"
+
+
+def test_build_point_vectors_match_embedders(fake_embedders):
+    """Each named vector must be produced by the *right* embedder.
+
+    Catches the class of bug where someone swaps two embedders that
+    happen to share a type signature (e.g., sapbert and bge are both
+    text-in/floats-out) — dim mismatch would be the only tell at the
+    schema level, but content comparison nails it directly.
+    """
+    from ingest import build_point
+    from schemas import CasePayload
+
+    c = CasePayload(
+        case_id="X-042",
+        case_type="missing",
+        sex="Male",
+        age_low=20, age_high=30,
+        state="TN",
+        date_epoch=1577836800,
+        date_iso="2020-01-01",
+        physical_text="eagle tattoo on right forearm",
+        circumstances="last seen at a rest stop",
+        clothing="dark jeans, black t-shirt",
+        image_url="https://example.com/photo.jpg",
+    )
+    p = build_point(c, fake_embedders)
+
+    assert p.vector["physical_text"] == fake_embedders.sapbert(c.physical_text)
+    assert p.vector["circumstances"] == fake_embedders.bge(c.circumstances)
+    assert p.vector["clothing"] == fake_embedders.bge(c.clothing)
+    assert p.vector["physical_image"] == fake_embedders.clip_image(c.image_url)
+
+
+def test_rerun_overwrites_payload(actian_client, fake_embedders):
+    """Re-ingesting a mutated case must overwrite the stored payload.
+
+    Count-only idempotency proves nothing was duplicated — it doesn't
+    prove the underlying record was actually updated. Mutate one case,
+    re-run, read it back, assert the new value landed.
+    """
+    from config import COLLECTION_NAME
+    from ingest import load_cases, point_id_for, run_ingest
+
+    cases = load_cases()
+    run_ingest(actian_client, cases, fake_embedders)
+
+    # Mutate MP-001 in-memory and re-ingest.
+    mp001 = next(c for c in cases if c.case_id == "MP-001")
+    mp001.circumstances = "OVERWRITTEN sentinel value"
+    run_ingest(actian_client, cases, fake_embedders)
+
+    retrieved = actian_client.points.get(
+        COLLECTION_NAME,
+        ids=[point_id_for("MP-001")],
+        with_payload=True,
+    )
+    assert len(retrieved) == 1
+    assert retrieved[0].payload["circumstances"] == "OVERWRITTEN sentinel value"
+    # Count didn't grow either
     assert actian_client.points.count(COLLECTION_NAME) == 60

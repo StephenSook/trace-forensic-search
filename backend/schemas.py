@@ -155,7 +155,6 @@ class CaseDetailResponse(BaseModel):
 class IngestResponse(BaseModel):
     collection: str
     ingested: int
-    skipped: int = 0
     took_ms: int
 
 

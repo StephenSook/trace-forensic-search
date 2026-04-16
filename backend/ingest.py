@@ -120,12 +120,13 @@ def run_ingest(
     t0 = time.perf_counter()
     ensure_collection(client)
     points = [build_point(c, emb) for c in cases]
-    total = client.upload_points(COLLECTION_NAME, points, batch_size=batch_size)
+    # upload_points returns len(points) on success or raises — there is no
+    # partial-success count to report, so we don't expose a `skipped` field.
+    ingested = client.upload_points(COLLECTION_NAME, points, batch_size=batch_size)
     took_ms = int((time.perf_counter() - t0) * 1000)
     return IngestResponse(
         collection=COLLECTION_NAME,
-        ingested=total,
-        skipped=len(cases) - total,
+        ingested=ingested,
         took_ms=took_ms,
     )
 
@@ -156,8 +157,7 @@ def main() -> None:
     print(
         f"✓ ingested {resp.ingested}/{len(cases)} cases "
         f"→ collection '{resp.collection}' "
-        f"in {resp.took_ms}ms "
-        f"(skipped {resp.skipped})"
+        f"in {resp.took_ms}ms"
     )
 
 

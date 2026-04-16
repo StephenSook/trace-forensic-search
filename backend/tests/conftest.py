@@ -6,6 +6,7 @@ skip-if-DB-down hook so CI without Actian up stays green.
 """
 from __future__ import annotations
 
+import hashlib
 import random
 import sys
 from pathlib import Path
@@ -21,15 +22,18 @@ if str(_BACKEND) not in sys.path:
 @pytest.fixture(scope="session")
 def actian_client():
     """Yield a connected VectorAIClient, or skip the session if DB is down."""
-    from actian_vectorai import VectorAIClient
+    from actian_vectorai import VectorAIClient, VectorAIConnectionError, VectorAITimeoutError
 
     from config import VECTORAI_ADDR
 
+    # Only skip on *connection*-shaped failures. Anything else (import
+    # errors, SDK signature drift, TypeError from bad args, auth) should
+    # fail loudly so a broken setup can't masquerade as "DB down."
     try:
         client = VectorAIClient(VECTORAI_ADDR)
         client.connect()
         client.health_check()
-    except Exception as exc:
+    except (VectorAIConnectionError, VectorAITimeoutError, ConnectionError, OSError, TimeoutError) as exc:
         pytest.skip(f"Actian VectorAI DB not reachable at {VECTORAI_ADDR}: {exc}")
 
     try:
@@ -49,7 +53,11 @@ def fake_embedders():
     from ingest import Embedders
 
     def _vec(text: str, dim: int) -> list[float]:
-        rng = random.Random(hash(text) & 0xFFFFFFFF)
+        # hashlib (not `hash(text)`) so seeds are stable across Python
+        # processes — otherwise PYTHONHASHSEED randomizes vectors per run
+        # and any future similarity assertion flakes.
+        seed = int.from_bytes(hashlib.md5(text.encode()).digest()[:8], "little")
+        rng = random.Random(seed)
         return [rng.gauss(0.0, 1.0) for _ in range(dim)]
 
     return Embedders(
