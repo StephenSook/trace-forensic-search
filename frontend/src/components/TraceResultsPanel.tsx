@@ -6,7 +6,7 @@ const mockResults = [
   {
     caseId: "UP-001",
     title: "Unidentified Male (Found 2020)",
-    confidence: 0.94,
+    confidence: 0.82,
     threshold: "HIGH CONFIDENCE" as const,
     stateFound: "Tennessee",
     genderEst: "Male",

@@ -189,13 +189,13 @@ class TestCORS:
         resp = client.options(
             "/search",
             headers={
-                "Origin": "http://localhost:5173",
+                "Origin": "http://localhost:8080",
                 "Access-Control-Request-Method": "POST",
                 "Access-Control-Request-Headers": "Content-Type",
             },
         )
         assert resp.status_code == 200
-        assert resp.headers["access-control-allow-origin"] == "http://localhost:5173"
+        assert resp.headers["access-control-allow-origin"] == "http://localhost:8080"
 
     def test_disallowed_origin_blocked(self, client):
         resp = client.options(

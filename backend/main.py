@@ -145,12 +145,16 @@ def get_case(case_id: str, client: VectorAIClient = Depends(get_client)):
     fb = FilterBuilder()
     fb.must(Field("case_id").eq(case_id))
 
-    scroll_result = client.points.scroll(
-        COLLECTION_NAME,
-        filter=fb.build(),
-        limit=1,
-        with_payload=True,
-    )
+    try:
+        scroll_result = client.points.scroll(
+            COLLECTION_NAME,
+            filter=fb.build(),
+            limit=1,
+            with_payload=True,
+        )
+    except Exception as exc:
+        logger.error("case lookup failed for %r: %r", case_id, exc)
+        raise HTTPException(status_code=503, detail="Database query failed") from exc
 
     if isinstance(scroll_result, tuple):
         points, _ = scroll_result

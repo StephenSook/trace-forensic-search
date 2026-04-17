@@ -5,6 +5,7 @@ Caller owns the ``VectorAIClient`` (``main.py`` injects via ``Depends``).
 """
 from __future__ import annotations
 
+import logging
 import re
 import time
 from datetime import datetime
@@ -24,6 +25,7 @@ from embeddings import (
     embed_text_clip,
     embed_text_sapbert,
 )
+from fastapi import HTTPException
 from filters import build_filter
 from schemas import (
     MatchMapping,
@@ -31,6 +33,8 @@ from schemas import (
     SearchResponse,
     SearchResult,
 )
+
+logger = logging.getLogger("trace.search")
 
 
 # ── Title / formatting helpers ────────────────────────────────────────
@@ -238,9 +242,13 @@ def run_search(req: SearchRequest, client: VectorAIClient) -> SearchResponse:
     filter_ = build_filter(req.filters)
 
     # 2. Embed query
-    q_sap = embed_text_sapbert(req.query)
-    q_bge = embed_text_bge(req.query)
-    q_clip = embed_text_clip(req.query)
+    try:
+        q_sap = embed_text_sapbert(req.query)
+        q_bge = embed_text_bge(req.query)
+        q_clip = embed_text_clip(req.query)
+    except Exception as exc:
+        logger.error("embedding failed for query %r: %r", req.query[:80], exc)
+        raise HTTPException(status_code=500, detail=f"Embedding failed: {exc}") from exc
 
     # 3. Fan-out: 4 named-vector searches
     common = dict(
@@ -250,18 +258,22 @@ def run_search(req: SearchRequest, client: VectorAIClient) -> SearchResponse:
         with_payload=True,
     )
 
-    hits_physical_text: list[ScoredPoint] = client.points.search(
-        vector=q_sap, using="physical_text", **common
-    )
-    hits_physical_image: list[ScoredPoint] = client.points.search(
-        vector=q_clip, using="physical_image", **common
-    )
-    hits_circumstances: list[ScoredPoint] = client.points.search(
-        vector=q_bge, using="circumstances", **common
-    )
-    hits_clothing: list[ScoredPoint] = client.points.search(
-        vector=q_bge, using="clothing", **common
-    )
+    try:
+        hits_physical_text: list[ScoredPoint] = client.points.search(
+            vector=q_sap, using="physical_text", **common
+        )
+        hits_physical_image: list[ScoredPoint] = client.points.search(
+            vector=q_clip, using="physical_image", **common
+        )
+        hits_circumstances: list[ScoredPoint] = client.points.search(
+            vector=q_bge, using="circumstances", **common
+        )
+        hits_clothing: list[ScoredPoint] = client.points.search(
+            vector=q_bge, using="clothing", **common
+        )
+    except Exception as exc:
+        logger.error("vector search failed: %r", exc)
+        raise HTTPException(status_code=500, detail=f"Vector search failed: {exc}") from exc
 
     # 4. RRF fusion (ordering only -- raw score ignored)
     all_lists = [
@@ -270,9 +282,13 @@ def run_search(req: SearchRequest, client: VectorAIClient) -> SearchResponse:
         hits_circumstances,
         hits_clothing,
     ]
-    fused = reciprocal_rank_fusion(
-        all_lists, limit=req.limit, ranking_constant_k=RRF_K
-    )
+    try:
+        fused = reciprocal_rank_fusion(
+            all_lists, limit=req.limit, ranking_constant_k=RRF_K
+        )
+    except Exception as exc:
+        logger.error("RRF fusion failed: %r", exc)
+        raise HTTPException(status_code=500, detail=f"Fusion failed: {exc}") from exc
 
     # Per-vector score lookup for confidence computation
     score_map: dict[str | int, dict[str, float]] = {}
@@ -283,8 +299,12 @@ def run_search(req: SearchRequest, client: VectorAIClient) -> SearchResponse:
 
     # Pre-compute chunk embeddings once for why-matched (shared across results)
     chunks = _chunk_query(req.query)
-    chunk_sap = [embed_text_sapbert(c) for c in chunks] if chunks else []
-    chunk_bge = embed_text_bge_batch(chunks) if chunks else []
+    try:
+        chunk_sap = [embed_text_sapbert(c) for c in chunks] if chunks else []
+        chunk_bge = embed_text_bge_batch(chunks) if chunks else []
+    except Exception as exc:
+        logger.warning("chunk embedding failed, skipping why-matched: %r", exc)
+        chunks, chunk_sap, chunk_bge = [], [], []
 
     # 5. Build SearchResult list
     results: list[SearchResult] = []
@@ -293,9 +313,13 @@ def run_search(req: SearchRequest, client: VectorAIClient) -> SearchResponse:
         per_vector = score_map.get(point.id, {})
         confidence = _clamp01(max(per_vector.values())) if per_vector else 0.0
 
-        match_mappings = _build_match_mappings(
-            chunks, chunk_sap, chunk_bge, payload
-        )
+        try:
+            match_mappings = _build_match_mappings(
+                chunks, chunk_sap, chunk_bge, payload
+            )
+        except Exception as exc:
+            logger.warning("match mapping failed for %s: %r", payload.get("case_id"), exc)
+            match_mappings = []
 
         results.append(
             SearchResult(

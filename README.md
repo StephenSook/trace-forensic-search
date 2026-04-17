@@ -25,9 +25,9 @@ A user types, in plain English:
 
 > *"My brother went missing in 2019 in Tennessee. He was 34, about 6 feet tall, had a distinctive tattoo of an eagle on his right forearm, and was last seen near a highway."*
 
-Trace returns, in under 200ms:
+Trace returns the top hit:
 
-> **Case UP-001 — Unidentified Male, recovered 2020** · confidence **0.94**
+> **Case UP-001 — Unidentified Male, recovered 2020** · confidence **HIGH (0.81)**
 > *"Male, mid-30s, avian motif dermagraphic, right ventral antebrachium, recovered near I-40 corridor. Estimated stature 178cm."*
 
 Every "Why This Matched" row shares **zero characters** with the query:

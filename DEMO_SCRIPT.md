@@ -42,9 +42,9 @@ his right forearm, and was last seen near a highway.
 
 ## 0:50–1:40 · The Demo Moment (Stephen)
 
-*(Results load — top card is UP-001, confidence 0.94)*
+*(Results load — top card is UP-001, confidence HIGH)*
 
-> **S:** Top hit. Case UP-001. Unidentified male, recovered 2020. Confidence ninety-four percent.
+> **S:** Top hit. Case UP-001. Unidentified male, recovered 2020. High confidence match.
 
 *(Click "Why This Matched" — the translation table expands)*
 
@@ -153,7 +153,7 @@ Each of these has at least one moment in the script:
 |---|---|
 | **Use of Actian VectorAI DB (30%)** | "four named vector spaces", "native filter DSL", "points.search with `using`" |
 | **Innovation** | "zero shared vocabulary", SapBERT for lay-to-forensic gap, RRF fusion |
-| **Technical execution** | four-stage pipeline, 0.94 confidence result, sub-200ms latency |
+| **Technical execution** | four-stage pipeline, HIGH confidence result, sub-second latency |
 | **Impact** | 600K / 40K stat, the "that shouldn't be possible" moment, local-first ethics |
 | **Presentation quality** | translation panel on screen, clean case detail, rehearsed timing |
 

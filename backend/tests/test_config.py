@@ -86,7 +86,7 @@ def test_synthetic_cases_path_exists():
 def test_frontend_origin_default():
     from config import FRONTEND_ORIGIN
 
-    assert "5173" in FRONTEND_ORIGIN
+    assert "8080" in FRONTEND_ORIGIN
 
 
 def test_vector_spec_is_frozen():
