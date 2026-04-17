@@ -130,9 +130,9 @@ class SearchResult(BaseModel):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def threshold(self) -> ConfidenceLabel:
-        if self.confidence >= 0.80:
+        if self.confidence >= 0.70:
             return "HIGH CONFIDENCE"
-        if self.confidence >= 0.6:
+        if self.confidence >= 0.45:
             return "MEDIUM CONFIDENCE"
         return "LOW CONFIDENCE"
 

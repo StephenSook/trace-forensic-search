@@ -34,9 +34,9 @@ about 6 feet tall, had a distinctive tattoo of an eagle on
 his right forearm, and was last seen near a highway.
 ```
 
-> **S:** None of those words appear in any forensic record. But watch what happens when we tell Trace to search *only* unidentified remains — the cases where a medical examiner wrote the record, not a family.
+> **S:** None of those words appear in any forensic record. But watch what happens when we tell Trace to search *only* unidentified remains in Tennessee — the cases where a medical examiner wrote the record, not a family.
 
-*(Set the CASE TYPE dropdown to "Unidentified Remains".)*
+*(Set CASE TYPE to "Unidentified Remains" and STATE to "Tennessee".)*
 
 **Hit EXECUTE SEMANTIC QUERY.**
 
@@ -44,11 +44,11 @@ his right forearm, and was last seen near a highway.
 
 ## 0:50–1:40 · The Demo Moment (Stephen)
 
-*(Results load — top card is UP-001, confidence 0.82 HIGH)*
+*(Results load — one result: UP-001, confidence 0.55 MEDIUM)*
 
-> **S:** Top hit. Case UP-001. Unidentified male found in 2020, Tennessee. High confidence — 0.82.
+> **S:** One match. Case UP-001. Unidentified male found in 2020, Tennessee. Medium confidence — 0.55.
 
-> **S:** This is an unidentified remains case. The family never wrote this record — a medical examiner did, using clinical forensic vocabulary. Yet Trace matched it to the family's plain-English description.
+> **S:** This is an unidentified remains case. The family never wrote this record — a medical examiner did, using clinical forensic vocabulary. The confidence is medium, not high, and that's exactly why this problem is hard. The two vocabularies share zero words. But Trace still found the connection.
 
 *(Click "WHY THIS MATCHED" — the translation table expands)*
 
@@ -57,9 +57,9 @@ his right forearm, and was last seen near a highway.
 *(Walk through the rows, slowly):*
 
 > - **"had a distinctive tattoo of an eagle on his right forearm"** matched **DISTINGUISHING_MARKS** — *"avian motif dermagraphic on right ventral antebrachium."* The family said "eagle tattoo on his right forearm." The medical examiner wrote "avian motif dermagraphic, right ventral antebrachium." Zero shared words. Trace bridged the gap. Similarity 0.51.
-> - **"was last seen near a highway"** matched **RECOVERY_CIRCUMSTANCES** — *"Recovered along I-40 corridor east of Nashville."* The family said "near a highway." The examiner said "I-40 corridor." Same location, different vocabulary. Similarity 0.62.
-> - **"My brother went missing in 2019 in Tennessee"** matched **RECOVERY_CIRCUMSTANCES** — the system connected the state and timeframe to the forensic recovery record. Similarity 0.83.
-> - **"about 6 feet tall"** matched **CLOTHING_EFFECTS** — similarity 0.50. Even at fifty percent, the system surfaced a relevant record field.
+> - **"was last seen near a highway"** matched **RECOVERY_LOCATION** — *"Recovered along I-40 corridor east of Nashville, 2020."* The family said "near a highway." The examiner said "I-40 corridor." Same location, different vocabulary. Similarity 0.62.
+> - **"My brother went missing in 2019 in Tennessee"** matched **RECOVERY_LOCATION** — the system connected the state and timeframe to the forensic recovery record. Similarity 0.44.
+> - **"about 6 feet tall"** matched **CLOTHING_EFFECTS** — similarity 0.53. Even at fifty-three percent, the system surfaced a relevant record field.
 
 *(Click "VIEW FULL CASE FILE")*
 
