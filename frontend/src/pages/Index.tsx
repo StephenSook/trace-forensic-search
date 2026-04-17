@@ -11,6 +11,7 @@ export interface SearchFormState {
   query: string;
   sex: string;
   state: string;
+  caseType: string;
   ageLow: string;
   ageHigh: string;
   dateFrom: string;
@@ -21,6 +22,7 @@ const INITIAL_FORM: SearchFormState = {
   query: "",
   sex: "",
   state: "",
+  caseType: "",
   ageLow: "",
   ageHigh: "",
   dateFrom: "",
@@ -31,6 +33,7 @@ export function buildRequest(form: SearchFormState): SearchRequest {
   const filters: SearchRequest["filters"] = {};
   if (form.sex) filters.sex = form.sex as "Male" | "Female" | "Unknown";
   if (form.state) filters.state = form.state;
+  if (form.caseType) filters.case_type = form.caseType as "missing" | "unidentified";
 
   const ageLow = parseInt(form.ageLow, 10);
   if (!Number.isNaN(ageLow)) filters.age_low = ageLow;

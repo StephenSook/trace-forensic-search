@@ -101,6 +101,20 @@ const TraceSearchPanel = ({ form, onFieldChange, onSubmit, isPending }: TraceSea
         </div>
       </div>
 
+      {/* Case Type */}
+      <div className="mb-4">
+        <label className="text-trace-label block mb-2">CASE TYPE</label>
+        <select
+          value={form.caseType}
+          onChange={(e) => onFieldChange("caseType", e.target.value)}
+          className="w-full bg-input border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring appearance-none"
+        >
+          <option value="">Any</option>
+          <option value="missing">Missing Person</option>
+          <option value="unidentified">Unidentified Remains</option>
+        </select>
+      </div>
+
       {/* Age Range */}
       <div className="mb-4">
         <label className="text-trace-label block mb-2">AGE RANGE</label>
