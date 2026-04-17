@@ -56,10 +56,10 @@ his right forearm, and was last seen near a highway.
 
 *(Walk through the rows, slowly):*
 
-> - **"had a distinctive tattoo of an eagle on his right forearm"** matched **DISTINGUISHING_MARKS** — *"avian motif dermagraphic on right ventral antebrachium."* The family said "eagle tattoo on his right forearm." The medical examiner wrote "avian motif dermagraphic, right ventral antebrachium." Zero shared words. Trace bridged the gap. Similarity 0.51.
 > - **"was last seen near a highway"** matched **RECOVERY_LOCATION** — *"Recovered along I-40 corridor east of Nashville, 2020."* The family said "near a highway." The examiner said "I-40 corridor." Same location, different vocabulary. Similarity 0.62.
+> - **"about 6 feet tall"** matched **CLOTHING_EFFECTS** — *"Denim trousers, dark forest-toned plaid overshirt, heavy-soled leather footwear."* Similarity 0.53.
+> - **"had a distinctive tattoo of an eagle on his right forearm"** matched **DISTINGUISHING_MARKS** — *"avian motif dermagraphic on right ventral antebrachium."* The family said "eagle tattoo on his right forearm." The medical examiner wrote "avian motif dermagraphic, right ventral antebrachium." Zero shared words. Trace bridged the gap. Similarity 0.51.
 > - **"My brother went missing in 2019 in Tennessee"** matched **RECOVERY_LOCATION** — the system connected the state and timeframe to the forensic recovery record. Similarity 0.44.
-> - **"about 6 feet tall"** matched **CLOTHING_EFFECTS** — similarity 0.53. Even at fifty-three percent, the system surfaced a relevant record field.
 
 *(Click "VIEW FULL CASE FILE")*
 
@@ -142,7 +142,7 @@ Have both pre-loaded in a second browser tab before you start.
 **If the format is pre-recorded (Loom):**
 - Record in 1080p, system audio muted except for your voice.
 - Do two takes — one at normal pace, one 10% slower. The judges can always speed up; they can't slow you down.
-- Export as MP4, upload to Loom, drop the public link into the DoraHacks submission.
+- Export as MP4, upload to YouTube (unlisted). Paste YouTube URL into DoraHacks Demo Video field. Mirror to Loom as backup link in README.
 
 **If it's Stephen solo** (Vinh unavailable or can't join):
 - Stephen delivers both voices. Compress the "How It Works" section to 45 seconds.
@@ -158,7 +158,7 @@ Each of these has at least one moment in the script:
 |---|---|
 | **Use of Actian VectorAI DB (30%)** | "four named vector spaces", "native filter DSL", "points.search with `using`" |
 | **Innovation** | "zero shared vocabulary", SapBERT for lay-to-forensic gap, RRF fusion, case_type filter isolates the semantic bridge |
-| **Technical execution** | four-stage pipeline, HIGH confidence result on UP-001, sub-second latency |
+| **Technical execution** | four-stage pipeline, MEDIUM confidence result on UP-001 (cross-vocabulary is hard), sub-second latency |
 | **Impact** | 600K / 40K stat, "avian motif dermagraphic" ↔ "eagle tattoo" live on screen, local-first ethics |
 | **Presentation quality** | translation panel showing forensic↔family vocabulary, clean case detail, rehearsed timing |
 
