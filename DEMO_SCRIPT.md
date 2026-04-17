@@ -34,32 +34,36 @@ about 6 feet tall, had a distinctive tattoo of an eagle on
 his right forearm, and was last seen near a highway.
 ```
 
-> **S:** None of those words appear in any forensic record.
+> **S:** None of those words appear in any forensic record. But watch what happens when we tell Trace to search *only* unidentified remains — the cases where a medical examiner wrote the record, not a family.
 
-**Hit enter.**
+*(Set the CASE TYPE dropdown to "Unidentified Remains".)*
+
+**Hit EXECUTE SEMANTIC QUERY.**
 
 ---
 
 ## 0:50–1:40 · The Demo Moment (Stephen)
 
-*(Results load — top card is MP-001, confidence 0.81 HIGH)*
+*(Results load — top card is UP-001, confidence 0.82 HIGH)*
 
-> **S:** Top hit. Case MP-001. Missing male, reported 2019, Tennessee. High confidence — 0.81.
+> **S:** Top hit. Case UP-001. Unidentified male found in 2020, Tennessee. High confidence — 0.82.
 
-*(Click "Why This Matched" — the translation table expands)*
+> **S:** This is an unidentified remains case. The family never wrote this record — a medical examiner did, using clinical forensic vocabulary. Yet Trace matched it to the family's plain-English description.
 
-> **S:** This panel is the whole point of Trace. Every row shows the family's words on the left, the forensic record phrase that matched on the right, and a similarity score.
+*(Click "WHY THIS MATCHED" — the translation table expands)*
 
-*(Walk through 2–3 rows, slowly):*
+> **S:** This panel is the whole point of Trace. Every row shows the family's words on the left, and the forensic phrasing that matched on the right.
 
-> - **"My brother went missing in 2019 in Tennessee"** matched **RECOVERY_LOCATION** — similarity 0.83.
-> - **"had a distinctive tattoo of an eagle on his right forearm"** matched **DISTINGUISHING_MARKS** — the system identified this as a marking even though the query uses plain English. Similarity 0.65.
-> - **"was last seen near a highway"** matched **RECOVERY_LOCATION** again — connecting "near a highway" to the record's "near a highway after leaving a gas station outside Nashville." Similarity 0.62.
-> - **"about 6 feet tall"** matched **CLOTHING_EFFECTS** — "wore blue jeans, a dark green flannel shirt, and brown work boots." Similarity 0.50. Even at fifty percent, the system surfaced a relevant record field.
+*(Walk through the rows, slowly):*
+
+> - **"had a distinctive tattoo of an eagle on his right forearm"** matched **DISTINGUISHING_MARKS** — *"avian motif dermagraphic on right ventral antebrachium."* The family said "eagle tattoo on his right forearm." The medical examiner wrote "avian motif dermagraphic, right ventral antebrachium." Zero shared words. Trace bridged the gap. Similarity 0.51.
+> - **"was last seen near a highway"** matched **RECOVERY_CIRCUMSTANCES** — *"Recovered along I-40 corridor east of Nashville."* The family said "near a highway." The examiner said "I-40 corridor." Same location, different vocabulary. Similarity 0.62.
+> - **"My brother went missing in 2019 in Tennessee"** matched **RECOVERY_CIRCUMSTANCES** — the system connected the state and timeframe to the forensic recovery record. Similarity 0.83.
+> - **"about 6 feet tall"** matched **CLOTHING_EFFECTS** — similarity 0.50. Even at fifty percent, the system surfaced a relevant record field.
 
 *(Click "VIEW FULL CASE FILE")*
 
-> **S:** Full case file — physical description mentions the eagle tattoo on the right forearm and a scar above the left eyebrow. Circumstances: last seen near a highway after leaving a gas station outside Nashville. Clothing: blue jeans, dark green flannel shirt, brown work boots.
+> **S:** Full case file. Physical description: *"avian motif dermagraphic on right ventral antebrachium"* — that's "eagle tattoo on his right forearm" in medical-examiner speak. Recovery: *"along I-40 corridor east of Nashville."* Every field is written in forensic vocabulary. A keyword search for "eagle tattoo" would never find this record. Trace did.
 
 *(Brief pause on the case detail page.)*
 
@@ -121,7 +125,7 @@ Do **not** troubleshoot on camera. Pivot cleanly:
 > "The live environment isn't cooperating right now — let me walk you through the same result from our recorded trace."
 
 Then show either:
-- A screenshot of the MP-001 result card with the "Why This Matched" panel expanded, OR
+- A screenshot of the UP-001 result card (Case Type set to "Unidentified Remains") with the "WHY THIS MATCHED" panel expanded, OR
 - A screen recording clip of the same query running against the real backend.
 
 Have both pre-loaded in a second browser tab before you start.
@@ -153,10 +157,10 @@ Each of these has at least one moment in the script:
 | Rubric dimension | Where it lands |
 |---|---|
 | **Use of Actian VectorAI DB (30%)** | "four named vector spaces", "native filter DSL", "points.search with `using`" |
-| **Innovation** | "zero shared vocabulary", SapBERT for lay-to-forensic gap, RRF fusion |
-| **Technical execution** | four-stage pipeline, HIGH confidence result, sub-second latency |
-| **Impact** | 600K / 40K stat, the "that shouldn't be possible" moment, local-first ethics |
-| **Presentation quality** | translation panel on screen, clean case detail, rehearsed timing |
+| **Innovation** | "zero shared vocabulary", SapBERT for lay-to-forensic gap, RRF fusion, case_type filter isolates the semantic bridge |
+| **Technical execution** | four-stage pipeline, HIGH confidence result on UP-001, sub-second latency |
+| **Impact** | 600K / 40K stat, "avian motif dermagraphic" ↔ "eagle tattoo" live on screen, local-first ethics |
+| **Presentation quality** | translation panel showing forensic↔family vocabulary, clean case detail, rehearsed timing |
 
 ---
 
