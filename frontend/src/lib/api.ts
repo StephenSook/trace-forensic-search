@@ -169,6 +169,56 @@ export function searchCases(
   return request<SearchResponse>("/search", { method: "POST", body: req, signal });
 }
 
+export async function searchWithImage(
+  image: File,
+  form: {
+    query: string;
+    caseType: string;
+    sex: string;
+    state: string;
+    ageLow: string;
+    ageHigh: string;
+    dateFrom: string;
+    dateTo: string;
+  },
+  signal?: AbortSignal,
+): Promise<SearchResponse> {
+  const fd = new FormData();
+  fd.append("image", image);
+  fd.append("query", form.query);
+  if (form.caseType) fd.append("case_type", form.caseType);
+  if (form.sex) fd.append("sex", form.sex);
+  if (form.state) fd.append("state", form.state);
+  if (form.ageLow) fd.append("age_low", form.ageLow);
+  if (form.ageHigh) fd.append("age_high", form.ageHigh);
+  if (form.dateFrom) fd.append("date_from", form.dateFrom);
+  if (form.dateTo) fd.append("date_to", form.dateTo);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/search/image`, {
+      method: "POST",
+      body: fd,
+      signal,
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") throw err;
+    throw new ApiError(0, `Network error: ${(err as Error).message ?? "request failed"}`);
+  }
+
+  if (!response.ok) {
+    const text = await response.text();
+    let message = `POST /search/image → ${response.status}`;
+    try {
+      const json = JSON.parse(text);
+      if (typeof json.detail === "string") message = json.detail;
+    } catch { /* raw text */ }
+    throw new ApiError(response.status, message, text);
+  }
+
+  return (await response.json()) as SearchResponse;
+}
+
 export function getCase(
   caseId: string,
   signal?: AbortSignal,

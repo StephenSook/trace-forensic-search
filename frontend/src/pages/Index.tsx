@@ -5,7 +5,7 @@ import TraceSidebar from "@/components/TraceSidebar";
 import TraceHeader from "@/components/TraceHeader";
 import TraceSearchPanel from "@/components/TraceSearchPanel";
 import TraceResultsPanel from "@/components/TraceResultsPanel";
-import { searchCases, ApiError, type SearchRequest, type SearchResponse } from "@/lib/api";
+import { searchCases, searchWithImage, ApiError, type SearchRequest, type SearchResponse } from "@/lib/api";
 
 export interface SearchFormState {
   query: string;
@@ -52,13 +52,19 @@ export function buildRequest(form: SearchFormState): SearchRequest {
 
 const Index = () => {
   const [form, setForm] = useState<SearchFormState>(INITIAL_FORM);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const handleFieldChange = (field: keyof SearchFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const mutation = useMutation<SearchResponse, Error, SearchRequest>({
-    mutationFn: (req) => searchCases(req),
+  const mutation = useMutation<SearchResponse, Error, SearchRequest | FormData>({
+    mutationFn: async () => {
+      if (imageFile) {
+        return searchWithImage(imageFile, form);
+      }
+      return searchCases(buildRequest(form));
+    },
     onError: (err) => {
       const message =
         err instanceof ApiError
@@ -70,8 +76,8 @@ const Index = () => {
 
   const handleSubmit = () => {
     if (mutation.isPending) return;
-    if (!form.query.trim()) {
-      toast.error("Enter a description before searching.");
+    if (!form.query.trim() && !imageFile) {
+      toast.error("Enter a description or upload an image before searching.");
       return;
     }
     mutation.mutate(buildRequest(form));
@@ -88,6 +94,8 @@ const Index = () => {
             onFieldChange={handleFieldChange}
             onSubmit={handleSubmit}
             isPending={mutation.isPending}
+            imageFile={imageFile}
+            onImageChange={setImageFile}
           />
           <TraceResultsPanel
             data={mutation.data}

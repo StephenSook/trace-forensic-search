@@ -22,22 +22,26 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import tempfile
 from contextlib import asynccontextmanager
 
 from actian_vectorai import Field, FilterBuilder, VectorAIClient
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from config import COLLECTION_NAME, FRONTEND_ORIGIN, VECTORAI_ADDR
-from embeddings import embed_text_bge, embed_text_clip, embed_text_sapbert
+from config import COLLECTION_NAME, FRONTEND_ORIGINS, VECTORAI_ADDR
+from embeddings import embed_image_clip, embed_text_bge, embed_text_clip, embed_text_sapbert
 from schemas import (
     CaseDetailResponse,
     CasePayload,
     HealthResponse,
+    SearchFilters,
     SearchRequest,
     SearchResponse,
 )
 from search import run_search
+
+MAX_IMAGE_BYTES = 10 * 1024 * 1024  # 10 MB
 
 logger = logging.getLogger("trace.main")
 
@@ -113,7 +117,7 @@ app = FastAPI(title="Trace", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_ORIGIN],
+    allow_origins=FRONTEND_ORIGINS,
     allow_methods=["GET", "POST"],
     allow_headers=["Content-Type"],
     allow_credentials=False,
@@ -126,6 +130,61 @@ app.add_middleware(
 def search(req: SearchRequest, client: VectorAIClient = Depends(get_client)):
     """Hybrid multi-vector search with RRF fusion."""
     return run_search(req, client)
+
+
+@app.post("/search/image", response_model=SearchResponse)
+def search_with_image(
+    image: UploadFile = File(...),
+    query: str = Form(""),
+    case_type: str = Form(""),
+    sex: str = Form(""),
+    state: str = Form(""),
+    age_low: str = Form(""),
+    age_high: str = Form(""),
+    date_from: str = Form(""),
+    date_to: str = Form(""),
+    client: VectorAIClient = Depends(get_client),
+):
+    """Search with an uploaded image via CLIP cross-modal matching."""
+    data = image.file.read(MAX_IMAGE_BYTES + 1)
+    if len(data) == 0:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
+    if len(data) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail="Image exceeds 10 MB limit")
+
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=True) as tmp:
+        tmp.write(data)
+        tmp.flush()
+        try:
+            img_vec = embed_image_clip(tmp.name)
+        except Exception as exc:
+            logger.error("image embedding failed: %r", exc)
+            raise HTTPException(status_code=500, detail=f"Image embedding failed: {exc}") from exc
+
+    filters: dict = {}
+    if case_type:
+        filters["case_type"] = case_type
+    if sex:
+        filters["sex"] = sex
+    if state:
+        filters["state"] = state
+    try:
+        if age_low:
+            filters["age_low"] = int(age_low)
+        if age_high:
+            filters["age_high"] = int(age_high)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid age value: {exc}") from exc
+    if date_from:
+        filters["date_from"] = date_from
+    if date_to:
+        filters["date_to"] = date_to
+
+    req = SearchRequest(
+        query=query if query.strip() else "image search",
+        filters=SearchFilters(**filters) if filters else None,
+    )
+    return run_search(req, client, image_vec=img_vec)
 
 
 @app.get("/case/{case_id}", response_model=CaseDetailResponse)

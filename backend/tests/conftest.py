@@ -64,4 +64,5 @@ def fake_embedders():
         sapbert=lambda t: _vec(t, 768),
         bge=lambda t: _vec(t, 1024),
         clip_image=lambda p: _vec(p, 512),
+        clip_text=lambda t: _vec(t, 512),
     )

@@ -49,7 +49,7 @@ def test_ensure_collection_creates_with_four_named_vectors(actian_client):
     assert ensure_collection(actian_client) is False
 
 
-def test_build_point_skips_physical_image_when_no_url(fake_embedders):
+def test_build_point_uses_clip_text_when_no_url(fake_embedders):
     from ingest import build_point, point_id_for
     from schemas import CasePayload
 
@@ -68,11 +68,12 @@ def test_build_point_skips_physical_image_when_no_url(fake_embedders):
     )
     p = build_point(c, fake_embedders)
     assert p.id == point_id_for("X-001")
-    assert set(p.vector.keys()) == {"physical_text", "circumstances", "clothing"}
+    assert set(p.vector.keys()) == {"physical_text", "circumstances", "clothing", "physical_image"}
     assert len(p.vector["physical_text"]) == 768
     assert len(p.vector["circumstances"]) == 1024
     assert len(p.vector["clothing"]) == 1024
-    assert "physical_image" not in p.vector
+    assert len(p.vector["physical_image"]) == 512
+    assert p.vector["physical_image"] == fake_embedders.clip_text(c.physical_text)
 
 
 def test_build_point_includes_image_when_url_present(fake_embedders):

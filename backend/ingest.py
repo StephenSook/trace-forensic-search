@@ -45,11 +45,12 @@ def point_id_for(case_id: str) -> str:
 
 @dataclass
 class Embedders:
-    """Three pluggable embed functions. Dims must match `config.VECTORS`."""
+    """Four pluggable embed functions. Dims must match `config.VECTORS`."""
 
     sapbert: TextEmbedder       # 768-dim — physical_text
     bge: TextEmbedder           # 1024-dim — circumstances + clothing
-    clip_image: ImageEmbedder   # 512-dim — physical_image (optional)
+    clip_image: ImageEmbedder   # 512-dim — physical_image (from image)
+    clip_text: TextEmbedder     # 512-dim — physical_image (from text fallback)
 
 
 # ── Loading ──────────────────────────────────────────────────────────
@@ -86,16 +87,19 @@ def ensure_collection(client: VectorAIClient) -> bool:
 def build_point(case: CasePayload, emb: Embedders) -> PointStruct:
     """Turn one case into a multi-vector PointStruct.
 
-    `physical_image` is only populated when the case has an `image_url`
-    — the Actian SDK accepts partial named-vector points.
+    `physical_image` uses the actual image when `image_url` is set,
+    otherwise falls back to CLIP text embedding of `physical_text`.
     """
     vectors: dict[str, list[float]] = {
         "physical_text": emb.sapbert(case.physical_text),
         "circumstances": emb.bge(case.circumstances),
         "clothing": emb.bge(case.clothing),
+        "physical_image": (
+            emb.clip_image(case.image_url)
+            if case.image_url
+            else emb.clip_text(case.physical_text)
+        ),
     }
-    if case.image_url:
-        vectors["physical_image"] = emb.clip_image(case.image_url)
 
     return PointStruct(
         id=point_id_for(case.case_id),
@@ -139,11 +143,12 @@ def _load_real_embedders() -> Embedders:
     Import is deferred so this module stays importable — and testable —
     before `embeddings.py` is written.
     """
-    from embeddings import embed_text_sapbert, embed_text_bge, embed_image_clip
+    from embeddings import embed_text_sapbert, embed_text_bge, embed_image_clip, embed_text_clip
     return Embedders(
         sapbert=embed_text_sapbert,
         bge=embed_text_bge,
         clip_image=embed_image_clip,
+        clip_text=embed_text_clip,
     )
 
 

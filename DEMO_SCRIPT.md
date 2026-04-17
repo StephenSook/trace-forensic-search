@@ -44,11 +44,11 @@ his right forearm, and was last seen near a highway.
 
 ## 0:50–1:40 · The Demo Moment (Stephen)
 
-*(Results load — one result: UP-001, confidence 0.62 MEDIUM)*
+*(Results load — one result: UP-001, confidence 0.79 HIGH)*
 
-> **S:** One match. Case UP-001. Unidentified male found in 2020, Tennessee. Medium confidence — 0.62.
+> **S:** One match. Case UP-001. Unidentified male found in 2020, Tennessee. High confidence — 0.79.
 
-> **S:** This is an unidentified remains case. The family never wrote this record — a medical examiner did, using clinical forensic vocabulary. The confidence is medium, not high, and that's exactly why this problem is hard. The two vocabularies share zero words. But Trace still found the connection.
+> **S:** This is an unidentified remains case. The family never wrote this record — a medical examiner did, using clinical forensic vocabulary. The two vocabularies share zero words. But Trace bridged the gap — high confidence, cross-vocabulary.
 
 *(Click "WHY THIS MATCHED" — the translation table expands)*
 
@@ -56,14 +56,14 @@ his right forearm, and was last seen near a highway.
 
 *(Walk through the rows, slowly):*
 
-> - **"was last seen near a highway"** matched **RECOVERY_LOCATION** — *"Recovered along I-40 corridor east of Nashville, 2020."* The family said "near a highway." The examiner said "I-40 corridor." Same location, different vocabulary. Similarity 0.62.
-> - **"about 6 feet tall"** matched **CLOTHING_EFFECTS** — *"Denim trousers, dark forest-toned plaid overshirt, heavy-soled leather footwear."* Similarity 0.53.
-> - **"had a distinctive tattoo of an eagle on his right forearm"** matched **DISTINGUISHING_MARKS** — *"avian motif dermagraphic on right ventral antebrachium."* The family said "eagle tattoo on his right forearm." The medical examiner wrote "avian motif dermagraphic, right ventral antebrachium." Zero shared words. Trace bridged the gap. Similarity 0.51.
-> - **"My brother went missing in 2019 in Tennessee"** matched **RECOVERY_LOCATION** — the system connected the state and timeframe to the forensic recovery record. Similarity 0.44.
+> - **"was last seen near a highway"** matched **RECOVERY_LOCATION** — *"Found in a partially wooded area beside the highway."* The family said "near a highway." The examiner said "beside the highway." Same location, different framing. Similarity 0.79.
+> - **"had a distinctive tattoo of an eagle on his right forearm"** matched **DISTINGUISHING_MARKS** — *"avian motif dermagraphic depicting raptor on right ventral antebrachium."* The family said "eagle tattoo on his right forearm." The medical examiner wrote "avian motif dermagraphic depicting raptor, right ventral antebrachium." Zero shared vocabulary. Trace bridged the gap. Similarity 0.65.
+> - **"My brother went missing in 2019 in Tennessee"** matched **DISCOVERY_DATE** — the system connected the state and timeframe to the forensic recovery record. Similarity 0.57.
+> - **"He was 34"** matched **PHYSICAL_DESCRIPTION** — *"mid-30s."* The family gave a specific age. The examiner estimated a range. Trace understood they're the same. Similarity 0.49.
 
 *(Click "VIEW FULL CASE FILE")*
 
-> **S:** Full case file. Physical description: *"avian motif dermagraphic on right ventral antebrachium"* — that's "eagle tattoo on his right forearm" in medical-examiner speak. Recovery: *"along I-40 corridor east of Nashville."* Every field is written in forensic vocabulary. A keyword search for "eagle tattoo" would never find this record. Trace did.
+> **S:** Full case file. Physical description: *"avian motif dermagraphic depicting raptor on right ventral antebrachium"* — that's "eagle tattoo on his right forearm" in medical-examiner speak. Recovery: *"near highway I-40 east of Nashville."* Every field is written in forensic vocabulary. A keyword search for "eagle tattoo" would never find this record. Trace did.
 
 *(Brief pause on the case detail page.)*
 
@@ -160,7 +160,7 @@ Each of these has at least one moment in the script:
 |---|---|
 | **Use of Actian VectorAI DB (30%)** | "four named vector spaces", "native filter DSL", "points.search with `using`" |
 | **Innovation** | "zero shared vocabulary", SapBERT for lay-to-forensic gap, RRF fusion, case_type filter isolates the semantic bridge |
-| **Technical execution** | four-stage pipeline, MEDIUM confidence result on UP-001 (cross-vocabulary is hard), sub-second latency |
+| **Technical execution** | four-stage pipeline, HIGH confidence 0.79 on UP-001 (cross-vocabulary, zero shared words), sub-second latency |
 | **Impact** | 600K / 40K stat, "avian motif dermagraphic" ↔ "eagle tattoo" live on screen, local-first ethics |
 | **Presentation quality** | translation panel showing forensic↔family vocabulary, clean case detail, rehearsed timing |
 

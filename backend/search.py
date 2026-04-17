@@ -68,10 +68,15 @@ def _format_date(date_iso: str) -> str:
 
 
 def _chunk_query(query: str) -> list[str]:
-    """Split query on ``', '``, ``' and '``, ``'; '``; drop <3-char; cap 5."""
-    parts = re.split(r",\s+|\s+and\s+|;\s+", query)
-    chunks = [p.strip() for p in parts if len(p.strip()) >= 3]
-    return chunks[:5]
+    """Split query on sentence/clause boundaries; clean and cap at 6."""
+    parts = re.split(r"\.\s+|,\s+|\s+and\s+|;\s+", query)
+    cleaned = []
+    for p in parts:
+        p = re.sub(r"^(and|but|or|then)\s+", "", p.strip(), flags=re.I)
+        p = p.strip(" .")
+        if len(p) >= 5:
+            cleaned.append(p)
+    return cleaned[:6]
 
 
 # ── Fine-grained field labels ─────────────────────────────────────────
@@ -153,6 +158,18 @@ def _cosine(a: list[float], b: list[float]) -> float:
 # ── Why This Matched ──────────────────────────────────────────────────
 
 
+def _split_source(text: str) -> list[str]:
+    """Split source text into clauses for fine-grained similarity matching.
+
+    Falls back to the full text when all clauses are too short.
+    """
+    parts = re.split(r"(?<=[.!?])\s+|,\s+|;\s+", text)
+    clauses = [p.strip(" .") for p in parts if len(p.strip(" .")) >= 5]
+    if not clauses and len(text.strip()) >= 5:
+        return [text.strip()]
+    return clauses
+
+
 def _build_match_mappings(
     chunks: list[str],
     chunk_sap: list[list[float]],
@@ -163,6 +180,7 @@ def _build_match_mappings(
 
     Chunk embeddings are computed once by the caller and shared across
     all results so we only pay the embedding cost once per search.
+    Source texts are split into clauses for fine-grained matching.
     """
     if not chunks:
         return []
@@ -175,38 +193,55 @@ def _build_match_mappings(
     if not sources:
         return []
 
-    # Encode source texts (per-result cost)
-    source_vecs: dict[str, list[float]] = {}
+    # Split source texts into clauses and embed each one
+    source_clauses: dict[str, list[tuple[str, list[float]]]] = {}
+
     if "physical_text" in sources:
-        source_vecs["physical_text"] = embed_text_sapbert(sources["physical_text"])
+        clauses = _split_source(sources["physical_text"])
+        if clauses:
+            vecs = [embed_text_sapbert(c) for c in clauses]
+            source_clauses["physical_text"] = list(zip(clauses, vecs))
+
     bge_keys = [k for k in ("circumstances", "clothing") if k in sources]
     if bge_keys:
-        bge_vecs = embed_text_bge_batch([sources[k] for k in bge_keys])
-        for k, v in zip(bge_keys, bge_vecs):
-            source_vecs[k] = v
+        all_clauses: list[str] = []
+        ranges: dict[str, tuple[int, int]] = {}
+        for k in bge_keys:
+            clauses = _split_source(sources[k])
+            start = len(all_clauses)
+            all_clauses.extend(clauses)
+            ranges[k] = (start, len(all_clauses))
+        if all_clauses:
+            all_vecs = embed_text_bge_batch(all_clauses)
+            for k in bge_keys:
+                s, e = ranges[k]
+                source_clauses[k] = list(zip(all_clauses[s:e], all_vecs[s:e]))
 
     mappings: list[MatchMapping] = []
     for i, chunk in enumerate(chunks):
         best_sim = -1.0
         best_key = ""
         best_label = ""
+        best_clause = ""
 
-        for field_name, field_vec in source_vecs.items():
+        for field_name, clause_pairs in source_clauses.items():
             cvec = chunk_sap[i] if field_name == "physical_text" else chunk_bge[i]
-            sim = _cosine(cvec, field_vec)
-            if sim > best_sim:
-                best_sim = sim
-                best_key = field_name
-                best_label = _classify_field(
-                    chunk, sources[field_name], field_name
-                )
+            for clause_text, clause_vec in clause_pairs:
+                sim = _cosine(cvec, clause_vec)
+                if sim > best_sim:
+                    best_sim = sim
+                    best_key = field_name
+                    best_clause = clause_text
+                    best_label = _classify_field(
+                        chunk, clause_text, field_name
+                    )
 
         if best_key:
             mappings.append(
                 MatchMapping(
                     queryTerm=f'"{chunk}"',
                     forensicField=best_label,
-                    forensicValue=_first_sentence(sources[best_key]),
+                    forensicValue=_first_sentence(best_clause),
                     similarity=_clamp01(best_sim),
                 )
             )
@@ -226,7 +261,11 @@ def _clamp01(v: float) -> float:
 # ── Main search function ─────────────────────────────────────────────
 
 
-def run_search(req: SearchRequest, client: VectorAIClient) -> SearchResponse:
+def run_search(
+    req: SearchRequest,
+    client: VectorAIClient,
+    image_vec: list[float] | None = None,
+) -> SearchResponse:
     """Execute hybrid multi-vector search with RRF fusion.
 
     Steps:
@@ -263,7 +302,7 @@ def run_search(req: SearchRequest, client: VectorAIClient) -> SearchResponse:
             vector=q_sap, using="physical_text", **common
         )
         hits_physical_image: list[ScoredPoint] = client.points.search(
-            vector=q_clip, using="physical_image", **common
+            vector=image_vec or q_clip, using="physical_image", **common
         )
         hits_circumstances: list[ScoredPoint] = client.points.search(
             vector=q_bge, using="circumstances", **common

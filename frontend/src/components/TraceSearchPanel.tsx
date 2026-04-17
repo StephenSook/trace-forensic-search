@@ -1,4 +1,5 @@
-import { Camera, Search, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useRef } from "react";
+import { Camera, Search, Loader2, X } from "lucide-react";
 import type { SearchFormState } from "@/pages/Index";
 
 const US_STATES = [
@@ -22,15 +23,29 @@ interface TraceSearchPanelProps {
   onFieldChange: (field: keyof SearchFormState, value: string) => void;
   onSubmit: () => void;
   isPending: boolean;
+  imageFile: File | null;
+  onImageChange: (file: File | null) => void;
 }
 
-const TraceSearchPanel = ({ form, onFieldChange, onSubmit, isPending }: TraceSearchPanelProps) => {
+const TraceSearchPanel = ({ form, onFieldChange, onSubmit, isPending, imageFile, onImageChange }: TraceSearchPanelProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSubmit();
     }
   };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    onImageChange(file);
+  };
+
+  const previewUrl = useMemo(() => imageFile ? URL.createObjectURL(imageFile) : null, [imageFile]);
+  useEffect(() => {
+    return () => { if (previewUrl) URL.revokeObjectURL(previewUrl); };
+  }, [previewUrl]);
 
   return (
     <div className="w-[420px] shrink-0 p-6 overflow-y-auto border-r border-border">
@@ -60,15 +75,46 @@ const TraceSearchPanel = ({ form, onFieldChange, onSubmit, isPending }: TraceSea
       {/* Visual Evidence */}
       <div className="mb-6">
         <label className="text-trace-label block mb-2">VISUAL EVIDENCE (OPTIONAL)</label>
-        <div className="border border-dashed border-border rounded-md p-8 flex flex-col items-center justify-center gap-2 bg-input/50 opacity-50">
-          <Camera size={24} className="text-muted-foreground" />
-          <p className="text-xs text-muted-foreground text-center font-mono tracking-wide uppercase">
-            CLIP IMAGE SEARCH
-          </p>
-          <p className="text-xs text-muted-foreground/60 font-mono tracking-wide uppercase text-[0.6rem]">
-            COMING SOON
-          </p>
-        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        {imageFile ? (
+          <div className="border border-primary/50 rounded-md p-3 bg-primary/5 flex items-center gap-3">
+            <img
+              src={previewUrl ?? undefined}
+              alt="Upload preview"
+              className="w-12 h-12 rounded object-cover"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-mono text-foreground truncate">{imageFile.name}</p>
+              <p className="text-[0.6rem] font-mono text-primary tracking-wide uppercase">CLIP CROSS-MODAL SEARCH ACTIVE</p>
+            </div>
+            <button
+              onClick={() => { onImageChange(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full border border-dashed border-border rounded-md p-8 flex flex-col items-center justify-center gap-2 bg-input/50 hover:bg-input/80 hover:border-primary/40 transition-colors cursor-pointer"
+          >
+            <Camera size={24} className="text-muted-foreground" />
+            <p className="text-xs text-muted-foreground text-center font-mono tracking-wide uppercase">
+              CLIP IMAGE SEARCH
+            </p>
+            <p className="text-[0.6rem] text-muted-foreground/60 font-mono tracking-wide uppercase">
+              UPLOAD TATTOO / IDENTIFYING PHOTO
+            </p>
+          </button>
+        )}
       </div>
 
       {/* Filters */}

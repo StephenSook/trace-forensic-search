@@ -82,8 +82,8 @@ class TestFormatDate:
 
 class TestChunkQuery:
     def test_comma_split(self):
-        chunks = _chunk_query("eagle tattoo, right forearm, tall")
-        assert chunks == ["eagle tattoo", "right forearm", "tall"]
+        chunks = _chunk_query("eagle tattoo, right forearm, tall person")
+        assert chunks == ["eagle tattoo", "right forearm", "tall person"]
 
     def test_and_split(self):
         chunks = _chunk_query("he was 34 and had a tattoo")
@@ -94,12 +94,12 @@ class TestChunkQuery:
         assert chunks == ["tattoo on arm", "scar on face"]
 
     def test_drops_short_chunks(self):
-        chunks = _chunk_query("a, bb, ccc, dddd")
-        assert chunks == ["ccc", "dddd"]
+        chunks = _chunk_query("a, bb, ccc, dddd, eeeee")
+        assert chunks == ["eeeee"]
 
-    def test_caps_at_five(self):
-        q = "one, two, three, four, five, six, seven"
-        assert len(_chunk_query(q)) == 5
+    def test_caps_at_six(self):
+        q = "alpha, bravo, charlie, delta, echo foxtrot, golf hotel, india juliet, kilo lima"
+        assert len(_chunk_query(q)) == 6
 
     def test_single_phrase(self):
         chunks = _chunk_query("eagle tattoo on right forearm")
@@ -115,8 +115,8 @@ class TestChunkQuery:
             "his right forearm, and was last seen near a highway."
         )
         chunks = _chunk_query(q)
-        assert len(chunks) <= 5
-        assert all(len(c) >= 3 for c in chunks)
+        assert len(chunks) <= 6
+        assert all(len(c) >= 5 for c in chunks)
 
 
 # ── _classify_field ───────────────────────────────────────────────────

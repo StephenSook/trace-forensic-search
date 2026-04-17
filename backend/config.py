@@ -125,4 +125,7 @@ STATE_NAMES: dict[str, str] = {
 
 # ── CORS (frontend origin) ────────────────────────────────────────────
 
-FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:8080")
+FRONTEND_ORIGINS = [
+    os.getenv("FRONTEND_ORIGIN", "http://localhost:8080"),
+    "http://localhost:5173",
+]
