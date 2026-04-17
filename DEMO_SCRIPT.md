@@ -42,23 +42,23 @@ his right forearm, and was last seen near a highway.
 
 ## 0:50–1:40 · The Demo Moment (Stephen)
 
-*(Results load — top card is UP-001, confidence HIGH)*
+*(Results load — top card is MP-001, confidence 0.81 HIGH)*
 
-> **S:** Top hit. Case UP-001. Unidentified male, recovered 2020. High confidence match.
+> **S:** Top hit. Case MP-001. Missing male, reported 2019, Tennessee. High confidence — 0.81.
 
 *(Click "Why This Matched" — the translation table expands)*
 
-> **S:** This panel is the whole point of Trace. Every row is a term the family used on the left, and the exact medical examiner phrase that matched on the right.
+> **S:** This panel is the whole point of Trace. Every row shows the family's words on the left, the forensic record phrase that matched on the right, and a similarity score.
 
 *(Walk through 2–3 rows, slowly):*
 
-> - **"eagle tattoo"** matched **"avian motif dermagraphic"** — zero characters in common.
-> - **"right forearm"** matched **"right ventral antebrachium"** — medical anatomical vocabulary.
-> - **"near a highway"** matched **"I-40 corridor"** — not even the same category of word. That's a narrative match.
+> - **"My brother went missing in 2019 in Tennessee"** matched **RECOVERY_LOCATION** — similarity 0.83.
+> - **"had a distinctive tattoo of an eagle on his right forearm"** matched **DISTINGUISHING_MARKS** — the system identified this as a marking even though the query uses plain English. Similarity 0.65.
+> - **"was last seen near a highway"** matched **RECOVERY_LOCATION** again — connecting "near a highway" to the record's "near a highway after leaving a gas station outside Nashville." Similarity 0.62.
 
 *(Click "VIEW FULL CASE FILE")*
 
-> **S:** Full case file — physical description, circumstances of recovery, clothing and personal effects, direct link out to the official NamUs record.
+> **S:** Full case file — physical description mentions the eagle tattoo on the right forearm and a scar above the left eyebrow. Circumstances: last seen near a highway after leaving a gas station outside Nashville. Clothing: blue jeans, dark green flannel shirt, brown work boots.
 
 *(Brief pause on the case detail page.)*
 
@@ -120,7 +120,7 @@ Do **not** troubleshoot on camera. Pivot cleanly:
 > "The live environment isn't cooperating right now — let me walk you through the same result from our recorded trace."
 
 Then show either:
-- A screenshot of the UP-001 result card with the "Why This Matched" panel expanded, OR
+- A screenshot of the MP-001 result card with the "Why This Matched" panel expanded, OR
 - A screen recording clip of the same query running against the real backend.
 
 Have both pre-loaded in a second browser tab before you start.

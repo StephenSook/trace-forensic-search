@@ -78,7 +78,7 @@ semantic search, vector database, AI/ML
 | Name | Role | GitHub |
 |---|---|---|
 | Stephen Sookra | Frontend, ingest, demo | @StephenSook |
-| Vinh Le | Embeddings, search, API | (Vinh's GitHub handle — TODO) |
+| Vinh Le | Embeddings, search, API | @vinhbin |
 
 ### Repo URL
 
