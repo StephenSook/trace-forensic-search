@@ -1,12 +1,47 @@
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ExternalLink, MapPin, Calendar, User, Ruler } from "lucide-react";
+import { ArrowLeft, ExternalLink, MapPin, Calendar, User, Ruler, FileText, Shirt, AlertTriangle } from "lucide-react";
 import TraceSidebar from "@/components/TraceSidebar";
 import TraceHeader from "@/components/TraceHeader";
 import { getCase, type CasePayload } from "@/lib/api";
 
 interface LocationState {
   caseData?: CasePayload;
+}
+
+const STATE_NAMES: Record<string, string> = {
+  AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas",
+  CA: "California", CO: "Colorado", CT: "Connecticut",
+  DE: "Delaware", DC: "District of Columbia", FL: "Florida",
+  GA: "Georgia", HI: "Hawaii", ID: "Idaho", IL: "Illinois",
+  IN: "Indiana", IA: "Iowa", KS: "Kansas", KY: "Kentucky",
+  LA: "Louisiana", ME: "Maine", MD: "Maryland",
+  MA: "Massachusetts", MI: "Michigan", MN: "Minnesota",
+  MS: "Mississippi", MO: "Missouri", MT: "Montana",
+  NE: "Nebraska", NV: "Nevada", NH: "New Hampshire",
+  NJ: "New Jersey", NM: "New Mexico", NY: "New York",
+  NC: "North Carolina", ND: "North Dakota", OH: "Ohio",
+  OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania",
+  RI: "Rhode Island", SC: "South Carolina", SD: "South Dakota",
+  TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont",
+  VA: "Virginia", WA: "Washington", WV: "West Virginia",
+  WI: "Wisconsin", WY: "Wyoming",
+};
+
+function formatDate(iso: string): string {
+  if (!iso) return "—";
+  try {
+    const [y, m, d] = iso.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    if (isNaN(dt.getTime())) return iso;
+    return dt.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+  } catch {
+    return iso;
+  }
+}
+
+function stateName(code: string): string {
+  return STATE_NAMES[code] ?? code;
 }
 
 const Field = ({ label, value }: { label: string; value: string | number | null }) => (
@@ -16,9 +51,12 @@ const Field = ({ label, value }: { label: string; value: string | number | null 
   </div>
 );
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const Section = ({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) => (
   <div className="border border-border rounded-md bg-card p-5">
-    <span className="text-trace-header block mb-4">{title}</span>
+    <div className="flex items-center gap-2 mb-4">
+      {icon && <span className="text-muted-foreground">{icon}</span>}
+      <span className="text-trace-header">{title}</span>
+    </div>
     {children}
   </div>
 );
@@ -88,7 +126,7 @@ const CaseDetail = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="flex items-start gap-2">
                     <MapPin size={14} className="text-muted-foreground mt-0.5 shrink-0" />
-                    <Field label="STATE" value={caseData.state} />
+                    <Field label="STATE" value={stateName(caseData.state)} />
                   </div>
                   <div className="flex items-start gap-2">
                     <User size={14} className="text-muted-foreground mt-0.5 shrink-0" />
@@ -100,27 +138,27 @@ const CaseDetail = () => {
                   </div>
                   <div className="flex items-start gap-2">
                     <Calendar size={14} className="text-muted-foreground mt-0.5 shrink-0" />
-                    <Field label="DATE" value={caseData.date_iso} />
+                    <Field label="DATE" value={formatDate(caseData.date_iso)} />
                   </div>
                 </div>
               </div>
 
               {/* Physical description */}
-              <Section title="PHYSICAL_DESCRIPTION">
+              <Section title="PHYSICAL_DESCRIPTION" icon={<FileText size={14} />}>
                 <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
                   {caseData.physical_text}
                 </p>
               </Section>
 
               {/* Circumstances */}
-              <Section title="CIRCUMSTANCES">
+              <Section title="CIRCUMSTANCES" icon={<AlertTriangle size={14} />}>
                 <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
                   {caseData.circumstances}
                 </p>
               </Section>
 
               {/* Clothing */}
-              <Section title="CLOTHING_AND_EFFECTS">
+              <Section title="CLOTHING_AND_EFFECTS" icon={<Shirt size={14} />}>
                 <p className="text-foreground text-sm leading-relaxed whitespace-pre-wrap">
                   {caseData.clothing}
                 </p>

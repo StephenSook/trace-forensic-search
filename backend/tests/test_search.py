@@ -18,6 +18,7 @@ from search import (
     _first_sentence,
     _format_age,
     _format_date,
+    _split_source,
     run_search,
 )
 
@@ -117,6 +118,53 @@ class TestChunkQuery:
         chunks = _chunk_query(q)
         assert len(chunks) <= 6
         assert all(len(c) >= 5 for c in chunks)
+
+
+# ── _split_source ────────────────────────────────────────────────────
+
+
+class TestSplitSource:
+    def test_period_split(self):
+        text = "Recovered along I-40. Found near the highway."
+        assert _split_source(text) == ["Recovered along I-40", "Found near the highway"]
+
+    def test_comma_split(self):
+        text = "Male, mid-30s, avian motif dermagraphic on right arm"
+        result = _split_source(text)
+        assert "mid-30s" in result
+        assert "avian motif dermagraphic on right arm" in result
+
+    def test_semicolon_split(self):
+        text = "Denim trousers; leather boots"
+        assert _split_source(text) == ["Denim trousers", "leather boots"]
+
+    def test_drops_short_clauses(self):
+        text = "Male, 5ft, avian motif on arm"
+        result = _split_source(text)
+        assert not any(len(c) < 5 for c in result)
+
+    def test_single_clause_no_delimiters(self):
+        assert _split_source("avian motif dermagraphic") == ["avian motif dermagraphic"]
+
+    def test_fallback_when_all_clauses_short(self):
+        assert _split_source("N/A, none") == ["N/A, none"]
+
+    def test_empty_string(self):
+        assert _split_source("") == []
+
+    def test_short_string(self):
+        assert _split_source("hi") == []
+
+
+class TestChunkQueryConjunctions:
+    def test_strips_leading_and(self):
+        chunks = _chunk_query("he was tall and had a scar")
+        assert any("had a scar" in c for c in chunks)
+        assert not any(c.startswith("and ") for c in chunks)
+
+    def test_strips_leading_but(self):
+        chunks = _chunk_query("tall person, but very thin build")
+        assert not any(c.startswith("but ") for c in chunks)
 
 
 # ── _classify_field ───────────────────────────────────────────────────
@@ -488,3 +536,46 @@ class TestRunSearchIntegration:
         # No snake_case result keys leaking
         assert "case_id" not in r
         assert "match_mappings" not in r
+
+    @patch("search.embed_text_sapbert", return_value=[0.1] * 768)
+    @patch("search.embed_text_bge", return_value=[0.2] * 1024)
+    @patch("search.embed_text_bge_batch", return_value=[[0.2] * 1024])
+    @patch("search.embed_text_clip", return_value=[0.3] * 512)
+    @patch("search.reciprocal_rank_fusion")
+    def test_image_vec_used_for_physical_image(
+        self, mock_rrf, mock_clip, mock_bge_batch, mock_bge, mock_sap
+    ):
+        from schemas import SearchRequest
+
+        custom_vec = [0.5] * 512
+        point = _make_scored_point("uuid-001", 0.82, _STUB_PAYLOAD)
+        client = self._mock_client([point])
+        mock_rrf.return_value = [point]
+
+        req = SearchRequest(query="eagle tattoo")
+        run_search(req, client, image_vec=custom_vec)
+
+        calls = client.points.search.call_args_list
+        image_call = [c for c in calls if c.kwargs["using"] == "physical_image"][0]
+        assert image_call.kwargs["vector"] == custom_vec
+
+    @patch("search.embed_text_sapbert", return_value=[0.1] * 768)
+    @patch("search.embed_text_bge", return_value=[0.2] * 1024)
+    @patch("search.embed_text_bge_batch", return_value=[[0.2] * 1024])
+    @patch("search.embed_text_clip", return_value=[0.3] * 512)
+    @patch("search.reciprocal_rank_fusion")
+    def test_no_image_vec_uses_clip_text(
+        self, mock_rrf, mock_clip, mock_bge_batch, mock_bge, mock_sap
+    ):
+        from schemas import SearchRequest
+
+        point = _make_scored_point("uuid-001", 0.82, _STUB_PAYLOAD)
+        client = self._mock_client([point])
+        mock_rrf.return_value = [point]
+
+        req = SearchRequest(query="eagle tattoo")
+        run_search(req, client)
+
+        calls = client.points.search.call_args_list
+        image_call = [c for c in calls if c.kwargs["using"] == "physical_image"][0]
+        assert image_call.kwargs["vector"] == [0.3] * 512

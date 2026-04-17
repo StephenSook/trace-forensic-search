@@ -5,6 +5,7 @@ never fires. Tests monkeypatch `main._client` directly to a stub.
 """
 from __future__ import annotations
 
+import io
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -197,6 +198,18 @@ class TestCORS:
         assert resp.status_code == 200
         assert resp.headers["access-control-allow-origin"] == "http://localhost:8080"
 
+    def test_preflight_from_vite_origin(self, client):
+        resp = client.options(
+            "/search",
+            headers={
+                "Origin": "http://localhost:5173",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "Content-Type",
+            },
+        )
+        assert resp.status_code == 200
+        assert resp.headers["access-control-allow-origin"] == "http://localhost:5173"
+
     def test_disallowed_origin_blocked(self, client):
         resp = client.options(
             "/search",
@@ -206,3 +219,89 @@ class TestCORS:
             },
         )
         assert "access-control-allow-origin" not in resp.headers
+
+
+# ── /search/image ───────────────────────────────────────────────────
+
+
+class TestSearchImage:
+    def test_503_when_no_client(self, client):
+        fake_img = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+        resp = client.post(
+            "/search/image",
+            files={"image": ("test.jpg", fake_img, "image/jpeg")},
+            data={"query": "eagle tattoo"},
+        )
+        assert resp.status_code == 503
+
+    def test_400_on_empty_image(self, client):
+        main._client = _stub_client()
+        resp = client.post(
+            "/search/image",
+            files={"image": ("empty.jpg", io.BytesIO(b""), "image/jpeg")},
+            data={"query": "eagle tattoo"},
+        )
+        assert resp.status_code == 400
+        assert "empty" in resp.json()["detail"].lower()
+
+    def test_422_on_invalid_age(self, client):
+        main._client = _stub_client()
+        fake_img = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+        with patch("main.embed_image_clip", return_value=[0.1] * 512):
+            resp = client.post(
+                "/search/image",
+                files={"image": ("test.jpg", fake_img, "image/jpeg")},
+                data={"query": "tattoo", "age_low": "abc"},
+            )
+        assert resp.status_code == 422
+        assert "age" in resp.json()["detail"].lower()
+
+    @patch("main.run_search")
+    @patch("main.embed_image_clip", return_value=[0.5] * 512)
+    def test_delegates_to_run_search_with_image_vec(self, mock_embed, mock_run, client):
+        from schemas import SearchResponse
+
+        mock_run.return_value = SearchResponse(
+            query="image search", total_matches=0, latency_ms=5, results=[]
+        )
+        main._client = _stub_client()
+        fake_img = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+        resp = client.post(
+            "/search/image",
+            files={"image": ("test.jpg", fake_img, "image/jpeg")},
+            data={"query": ""},
+        )
+        assert resp.status_code == 200
+        assert mock_run.call_count == 1
+        _, kwargs = mock_run.call_args
+        assert kwargs["image_vec"] == [0.5] * 512
+
+    @patch("main.run_search")
+    @patch("main.embed_image_clip", return_value=[0.5] * 512)
+    def test_empty_query_defaults_to_image_search(self, mock_embed, mock_run, client):
+        from schemas import SearchResponse
+
+        mock_run.return_value = SearchResponse(
+            query="image search", total_matches=0, latency_ms=5, results=[]
+        )
+        main._client = _stub_client()
+        fake_img = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+        client.post(
+            "/search/image",
+            files={"image": ("test.jpg", fake_img, "image/jpeg")},
+            data={"query": "  "},
+        )
+        req_arg = mock_run.call_args[0][0]
+        assert req_arg.query == "image search"
+
+    @patch("main.embed_image_clip", side_effect=RuntimeError("CLIP model failed"))
+    def test_500_on_embed_failure(self, mock_embed, client):
+        main._client = _stub_client()
+        fake_img = io.BytesIO(b"\xff\xd8\xff\xe0" + b"\x00" * 100)
+        resp = client.post(
+            "/search/image",
+            files={"image": ("test.jpg", fake_img, "image/jpeg")},
+            data={"query": "tattoo"},
+        )
+        assert resp.status_code == 500
+        assert "Image embedding failed" in resp.json()["detail"]

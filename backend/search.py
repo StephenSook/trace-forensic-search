@@ -342,7 +342,7 @@ def run_search(
         chunk_sap = [embed_text_sapbert(c) for c in chunks] if chunks else []
         chunk_bge = embed_text_bge_batch(chunks) if chunks else []
     except Exception as exc:
-        logger.warning("chunk embedding failed, skipping why-matched: %r", exc)
+        logger.error("chunk embedding failed, skipping why-matched: %r", exc)
         chunks, chunk_sap, chunk_bge = [], [], []
 
     # 5. Build SearchResult list
@@ -357,7 +357,7 @@ def run_search(
                 chunks, chunk_sap, chunk_bge, payload
             )
         except Exception as exc:
-            logger.warning("match mapping failed for %s: %r", payload.get("case_id"), exc)
+            logger.error("match mapping failed for %s: %r", payload.get("case_id"), exc)
             match_mappings = []
 
         chunk_confidence = max((m.similarity for m in match_mappings), default=0.0)
