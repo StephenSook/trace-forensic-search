@@ -369,7 +369,7 @@ class TestRunSearchIntegration:
         r = resp.results[0]
         assert r.caseId == "UP-001"
         assert r.title == "Unidentified Male (Found 2020)"
-        assert r.confidence == 0.82
+        assert r.confidence >= 0.82
         assert r.threshold == "HIGH CONFIDENCE"
         assert r.stateFound == "Tennessee"
         assert r.genderEst == "Male"

@@ -234,7 +234,7 @@ def run_search(req: SearchRequest, client: VectorAIClient) -> SearchResponse:
       2. Embed query three ways (SapBERT, BGE-M3, CLIP).
       3. Fan out four named-vector searches against ``cases``.
       4. Fuse with ``reciprocal_rank_fusion`` (ordering only).
-      5. Compute ``confidence = max(per-vector cosine)``, build results.
+      5. Compute ``confidence = max(per-vector cosine, best chunk cosine)``, build results.
     """
     t0 = time.perf_counter()
 
@@ -311,7 +311,7 @@ def run_search(req: SearchRequest, client: VectorAIClient) -> SearchResponse:
     for point in fused:
         payload = point.payload or {}
         per_vector = score_map.get(point.id, {})
-        confidence = _clamp01(max(per_vector.values())) if per_vector else 0.0
+        vector_confidence = max(per_vector.values()) if per_vector else 0.0
 
         try:
             match_mappings = _build_match_mappings(
@@ -320,6 +320,9 @@ def run_search(req: SearchRequest, client: VectorAIClient) -> SearchResponse:
         except Exception as exc:
             logger.warning("match mapping failed for %s: %r", payload.get("case_id"), exc)
             match_mappings = []
+
+        chunk_confidence = max((m.similarity for m in match_mappings), default=0.0)
+        confidence = _clamp01(max(vector_confidence, chunk_confidence))
 
         results.append(
             SearchResult(

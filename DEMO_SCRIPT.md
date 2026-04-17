@@ -44,9 +44,9 @@ his right forearm, and was last seen near a highway.
 
 ## 0:50–1:40 · The Demo Moment (Stephen)
 
-*(Results load — one result: UP-001, confidence 0.55 MEDIUM)*
+*(Results load — one result: UP-001, confidence 0.62 MEDIUM)*
 
-> **S:** One match. Case UP-001. Unidentified male found in 2020, Tennessee. Medium confidence — 0.55.
+> **S:** One match. Case UP-001. Unidentified male found in 2020, Tennessee. Medium confidence — 0.62.
 
 > **S:** This is an unidentified remains case. The family never wrote this record — a medical examiner did, using clinical forensic vocabulary. The confidence is medium, not high, and that's exactly why this problem is hard. The two vocabularies share zero words. But Trace still found the connection.
 
