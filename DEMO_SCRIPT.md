@@ -114,6 +114,8 @@ his right forearm, and was last seen near a highway.
 
 > **V:** The data to connect 600,000 missing people to 40,000 unidentified remains already exists. What was missing was a semantic bridge.
 
+*(Play the Gource time-lapse — 5 seconds of the repo growing from first commit to final state. Let it run while delivering the closing line.)*
+
 > **S:** We're Stephen and Vinh. This is Trace. Thank you.
 
 ---
