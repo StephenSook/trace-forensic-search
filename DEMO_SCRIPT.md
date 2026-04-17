@@ -55,6 +55,7 @@ his right forearm, and was last seen near a highway.
 > - **"My brother went missing in 2019 in Tennessee"** matched **RECOVERY_LOCATION** — similarity 0.83.
 > - **"had a distinctive tattoo of an eagle on his right forearm"** matched **DISTINGUISHING_MARKS** — the system identified this as a marking even though the query uses plain English. Similarity 0.65.
 > - **"was last seen near a highway"** matched **RECOVERY_LOCATION** again — connecting "near a highway" to the record's "near a highway after leaving a gas station outside Nashville." Similarity 0.62.
+> - **"about 6 feet tall"** matched **CLOTHING_EFFECTS** — "wore blue jeans, a dark green flannel shirt, and brown work boots." Similarity 0.50. Even at fifty percent, the system surfaced a relevant record field.
 
 *(Click "VIEW FULL CASE FILE")*
 
