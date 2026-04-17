@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Trace — Interactive Repo Graph</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0D1117; overflow: hidden; font-family: monospace; }
+  canvas { display: block; }
+  #title { position: absolute; top: 15px; left: 20px; color: #58A6FF; font-size: 16px; font-weight: bold; z-index: 10; }
+  #subtitle { position: absolute; top: 38px; left: 20px; color: #484F58; font-size: 11px; z-index: 10; }
+  #tooltip { position: absolute; display: none; background: #161B22; border: 1px solid #30363D; border-radius: 6px; padding: 8px 14px; color: #C9D1D9; font-size: 12px; font-family: monospace; pointer-events: none; z-index: 20; }
+  #legend { position: absolute; bottom: 20px; right: 20px; background: #161B22; border: 1px solid #30363D; border-radius: 8px; padding: 14px 18px; z-index: 10; }
+  .legend-title { color: #8B949E; font-size: 10px; font-weight: 600; margin-bottom: 8px; letter-spacing: 1px; font-family: monospace; }
+  .legend-item { display: flex; align-items: center; gap: 8px; margin: 5px 0; color: #C9D1D9; font-size: 11px; font-family: monospace; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  #controls { position: absolute; top: 15px; right: 20px; z-index: 10; }
+  #controls button { background: #161B22; border: 1px solid #30363D; color: #C9D1D9; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: monospace; font-size: 11px; margin-left: 5px; }
+  #controls button:hover { border-color: #58A6FF; color: #58A6FF; }
+</style>
+</head>
+<body>
+<div id="title">TRACE — Repository Graph</div>
+<div id="subtitle">Drag nodes · Scroll to zoom · Pan with mouse</div>
+<div id="tooltip"></div>
+<div id="controls">
+  <button onclick="resetZoom()">Reset View</button>
+</div>
+<div id="legend">
+  <div class="legend-title">FILE TYPES</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3572A5"></div>Python</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#3178C6"></div>TypeScript</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#F7DF1E"></div>JavaScript</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#555555"></div>JSON</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#083FA1"></div>Markdown</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#563D7C"></div>CSS</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#E34C26"></div>HTML</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#CB171E"></div>YAML</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#89E051"></div>Shell</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#58A6FF;border:1px solid #30363D"></div>Directory</div>
+</div>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+const nodes = [{"id": 0, "name": "Trace", "ext": "", "size": 30, "color": "#58A6FF", "isDir": true}, {"id": 1, "name": ".gitignore", "ext": "", "size": 4.4205000000000005, "color": "#CED6E0", "isDir": false}, {"id": 2, "name": ".serena", "ext": "", "size": 15, "color": "#58A6FF", "isDir": true}, {"id": 3, "name": ".gitignore", "ext": "", "size": 4, "color": "#CED6E0", "isDir": false}, {"id": 4, "name": "cache", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 5, "name": "typescript", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 6, "name": "memories", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 7, "name": "project.local.yml", "ext": ".yml", "size": 4, "color": "#CB171E", "isDir": false}, {"id": 8, "name": "project.yml", "ext": ".yml", "size": 7.657, "color": "#CB171E", "isDir": false}, {"id": 9, "name": "DEMO_SCRIPT.md", "ext": ".md", "size": 8.247, "color": "#083FA1", "isDir": false}, {"id": 10, "name": "DoraHacks Submission", "ext": "", "size": 11, "color": "#58A6FF", "isDir": true}, {"id": 11, "name": "Screenshot 2026-04-15 at 11.53.51\u202fPM.png", "ext": ".png", "size": 18, "color": "#A97BFF", "isDir": false}, {"id": 12, "name": "Screenshot 2026-04-15 at 11.54.03\u202fPM.png", "ext": ".png", "size": 18, "color": "#A97BFF", "isDir": false}, {"id": 13, "name": "Screenshot 2026-04-15 at 11.54.13\u202fPM.png", "ext": ".png", "size": 18, "color": "#A97BFF", "isDir": false}, {"id": 14, "name": "LICENSE", "ext": "", "size": 4, "color": "#CED6E0", "isDir": false}, {"id": 15, "name": "PLAN.md", "ext": ".md", "size": 18, "color": "#083FA1", "isDir": false}, {"id": 16, "name": "README.md", "ext": ".md", "size": 5.8469999999999995, "color": "#083FA1", "isDir": false}, {"id": 17, "name": "STATUS_DAY4_VINH.md", "ext": ".md", "size": 5.4895, "color": "#083FA1", "isDir": false}, {"id": 18, "name": "SUBMISSION.md", "ext": ".md", "size": 8.337, "color": "#083FA1", "isDir": false}, {"id": 19, "name": "Trace Logo", "ext": "", "size": 23, "color": "#58A6FF", "isDir": true}, {"id": 20, "name": "hf_20260416_040513_7abdbf17-3df8-453d-bed4-8481edec22b1.png", "ext": ".png", "size": 18, "color": "#A97BFF", "isDir": false}, {"id": 21, "name": "hf_20260416_040529_0d89a760-b8b8-4a0a-bfdf-fcf2ecbc2dda.png", "ext": ".png", "size": 18, "color": "#A97BFF", "isDir": false}, {"id": 22, "name": "trace-crosshair-source.png", "ext": ".png", "size": 18, "color": "#A97BFF", "isDir": false}, {"id": 23, "name": "trace-crosshair-square.png", "ext": ".png", "size": 18, "color": "#A97BFF", "isDir": false}, {"id": 24, "name": "trace-logo-480-crosshair.png", "ext": ".png", "size": 18, "color": "#A97BFF", "isDir": false}, {"id": 25, "name": "trace-logo-480-wordmark-kling.png", "ext": ".png", "size": 18, "color": "#A97BFF", "isDir": false}, {"id": 26, "name": "trace-logo-480-wordmark.png", "ext": ".png", "size": 6.9495000000000005, "color": "#A97BFF", "isDir": false}, {"id": 27, "name": "trace-wordmark-source.png", "ext": ".png", "size": 18, "color": "#A97BFF", "isDir": false}, {"id": 28, "name": "trace-wordmark-square.png", "ext": ".png", "size": 18, "color": "#A97BFF", "isDir": false}, {"id": 29, "name": "backend", "ext": "", "size": 25, "color": "#58A6FF", "isDir": true}, {"id": 30, "name": ".vectordata", "ext": "", "size": 13, "color": "#58A6FF", "isDir": true}, {"id": 31, "name": "cases", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 32, "name": "metadata.json", "ext": ".json", "size": 4, "color": "#555555", "isDir": false}, {"id": 33, "name": "segment_0", "ext": "", "size": 13, "color": "#58A6FF", "isDir": true}, {"id": 34, "name": "id_map.btr", "ext": ".btr", "size": 18, "color": "#CED6E0", "isDir": false}, {"id": 35, "name": "payloads", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 36, "name": "payloads.btr", "ext": ".btr", "size": 18, "color": "#CED6E0", "isDir": false}, {"id": 37, "name": "segment_state.btr", "ext": ".btr", "size": 18, "color": "#CED6E0", "isDir": false}, {"id": 38, "name": "vectors", "ext": "", "size": 13, "color": "#58A6FF", "isDir": true}, {"id": 39, "name": "circumstances", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 40, "name": "vectors.btr", "ext": ".btr", "size": 18, "color": "#CED6E0", "isDir": false}, {"id": 41, "name": "clothing", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 42, "name": "vectors.btr", "ext": ".btr", "size": 18, "color": "#CED6E0", "isDir": false}, {"id": 43, "name": "physical_image", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 44, "name": "vectors.btr", "ext": ".btr", "size": 18, "color": "#CED6E0", "isDir": false}, {"id": 45, "name": "physical_text", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 46, "name": "vectors.btr", "ext": ".btr", "size": 18, "color": "#CED6E0", "isDir": false}, {"id": 47, "name": "datastore.ini", "ext": ".ini", "size": 4, "color": "#9C4121", "isDir": false}, {"id": 48, "name": "vde.log", "ext": ".log", "size": 18, "color": "#CED6E0", "isDir": false}, {"id": 49, "name": "zzz_shape_test", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 50, "name": "metadata.json", "ext": ".json", "size": 4, "color": "#555555", "isDir": false}, {"id": 51, "name": "segment_0", "ext": "", "size": 13, "color": "#58A6FF", "isDir": true}, {"id": 52, "name": "id_map.btr", "ext": ".btr", "size": 18, "color": "#CED6E0", "isDir": false}, {"id": 53, "name": "payloads", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 54, "name": "payloads.btr", "ext": ".btr", "size": 18, "color": "#CED6E0", "isDir": false}, {"id": 55, "name": "segment_state.btr", "ext": ".btr", "size": 18, "color": "#CED6E0", "isDir": false}, {"id": 56, "name": "vectors", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 57, "name": "a", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 58, "name": "vectors.btr", "ext": ".btr", "size": 18, "color": "#CED6E0", "isDir": false}, {"id": 59, "name": "b", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 60, "name": "vectors.btr", "ext": ".btr", "size": 18, "color": "#CED6E0", "isDir": false}, {"id": 61, "name": "config.py", "ext": ".py", "size": 5.4615, "color": "#3572A5", "isDir": false}, {"id": 62, "name": "embeddings.py", "ext": ".py", "size": 5.4895, "color": "#3572A5", "isDir": false}, {"id": 63, "name": "filters.py", "ext": ".py", "size": 4, "color": "#3572A5", "isDir": false}, {"id": 64, "name": "ingest.py", "ext": ".py", "size": 5.933, "color": "#3572A5", "isDir": false}, {"id": 65, "name": "main.py", "ext": ".py", "size": 6.723, "color": "#3572A5", "isDir": false}, {"id": 66, "name": "requirements.txt", "ext": ".txt", "size": 4, "color": "#AAAAAA", "isDir": false}, {"id": 67, "name": "schemas.py", "ext": ".py", "size": 5.8309999999999995, "color": "#3572A5", "isDir": false}, {"id": 68, "name": "search.py", "ext": ".py", "size": 9.163, "color": "#3572A5", "isDir": false}, {"id": 69, "name": "tests", "ext": "", "size": 23, "color": "#58A6FF", "isDir": true}, {"id": 70, "name": "__init__.py", "ext": ".py", "size": 4, "color": "#3572A5", "isDir": false}, {"id": 71, "name": "conftest.py", "ext": ".py", "size": 4.1495, "color": "#3572A5", "isDir": false}, {"id": 72, "name": "test_config.py", "ext": ".py", "size": 4.0765, "color": "#3572A5", "isDir": false}, {"id": 73, "name": "test_filters.py", "ext": ".py", "size": 7.3925, "color": "#3572A5", "isDir": false}, {"id": 74, "name": "test_ingest.py", "ext": ".py", "size": 6.857, "color": "#3572A5", "isDir": false}, {"id": 75, "name": "test_main.py", "ext": ".py", "size": 6.5825, "color": "#3572A5", "isDir": false}, {"id": 76, "name": "test_schemas.py", "ext": ".py", "size": 8.795, "color": "#3572A5", "isDir": false}, {"id": 77, "name": "test_search.py", "ext": ".py", "size": 12.0525, "color": "#3572A5", "isDir": false}, {"id": 78, "name": "test_synthetic_data.py", "ext": ".py", "size": 5.3, "color": "#3572A5", "isDir": false}, {"id": 79, "name": "data", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 80, "name": "synthetic", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 81, "name": "cases.json", "ext": ".json", "size": 18, "color": "#555555", "isDir": false}, {"id": 82, "name": "generate_cases.py", "ext": ".py", "size": 15.6875, "color": "#3572A5", "isDir": false}, {"id": 83, "name": "diagram.svg", "ext": ".svg", "size": 18, "color": "#FF9900", "isDir": false}, {"id": 84, "name": "docker-compose.yml", "ext": ".yml", "size": 4, "color": "#CB171E", "isDir": false}, {"id": 85, "name": "frontend", "ext": "", "size": 30, "color": "#58A6FF", "isDir": true}, {"id": 86, "name": "Background Information", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 87, "name": "Trace_Claude_Background.pdf", "ext": ".pdf", "size": 18, "color": "#CED6E0", "isDir": false}, {"id": 88, "name": "README.md", "ext": ".md", "size": 4, "color": "#083FA1", "isDir": false}, {"id": 89, "name": "components.json", "ext": ".json", "size": 4, "color": "#555555", "isDir": false}, {"id": 90, "name": "eslint.config.js", "ext": ".js", "size": 4, "color": "#F7DF1E", "isDir": false}, {"id": 91, "name": "index.html", "ext": ".html", "size": 4, "color": "#E34C26", "isDir": false}, {"id": 92, "name": "package.json", "ext": ".json", "size": 4.4345, "color": "#555555", "isDir": false}, {"id": 93, "name": "postcss.config.js", "ext": ".js", "size": 4, "color": "#F7DF1E", "isDir": false}, {"id": 94, "name": "public", "ext": "", "size": 11, "color": "#58A6FF", "isDir": true}, {"id": 95, "name": "favicon.ico", "ext": ".ico", "size": 13.1865, "color": "#CED6E0", "isDir": false}, {"id": 96, "name": "placeholder.svg", "ext": ".svg", "size": 17.3125, "color": "#FF9900", "isDir": false}, {"id": 97, "name": "robots.txt", "ext": ".txt", "size": 4, "color": "#AAAAAA", "isDir": false}, {"id": 98, "name": "src", "ext": "", "size": 25, "color": "#58A6FF", "isDir": true}, {"id": 99, "name": "App.css", "ext": ".css", "size": 4, "color": "#563D7C", "isDir": false}, {"id": 100, "name": "App.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 101, "name": "components", "ext": "", "size": 19, "color": "#58A6FF", "isDir": true}, {"id": 102, "name": "NavLink.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 103, "name": "TraceHeader.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 104, "name": "TraceResultCard.tsx", "ext": ".tsx", "size": 5.477, "color": "#3178C6", "isDir": false}, {"id": 105, "name": "TraceResultsPanel.tsx", "ext": ".tsx", "size": 5.7695, "color": "#3178C6", "isDir": false}, {"id": 106, "name": "TraceSearchPanel.tsx", "ext": ".tsx", "size": 7.3115, "color": "#3178C6", "isDir": false}, {"id": 107, "name": "TraceSidebar.tsx", "ext": ".tsx", "size": 4.2204999999999995, "color": "#3178C6", "isDir": false}, {"id": 108, "name": "ui", "ext": "", "size": 30, "color": "#58A6FF", "isDir": true}, {"id": 109, "name": "accordion.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 110, "name": "alert-dialog.tsx", "ext": ".tsx", "size": 5.156499999999999, "color": "#3178C6", "isDir": false}, {"id": 111, "name": "alert.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 112, "name": "aspect-ratio.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 113, "name": "avatar.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 114, "name": "badge.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 115, "name": "breadcrumb.tsx", "ext": ".tsx", "size": 4.3435, "color": "#3178C6", "isDir": false}, {"id": 116, "name": "button.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 117, "name": "calendar.tsx", "ext": ".tsx", "size": 4.2815, "color": "#3178C6", "isDir": false}, {"id": 118, "name": "card.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 119, "name": "carousel.tsx", "ext": ".tsx", "size": 6.124499999999999, "color": "#3178C6", "isDir": false}, {"id": 120, "name": "chart.tsx", "ext": ".tsx", "size": 7.9935, "color": "#3178C6", "isDir": false}, {"id": 121, "name": "checkbox.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 122, "name": "collapsible.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 123, "name": "command.tsx", "ext": ".tsx", "size": 5.4105, "color": "#3178C6", "isDir": false}, {"id": 124, "name": "context-menu.tsx", "ext": ".tsx", "size": 6.5954999999999995, "color": "#3178C6", "isDir": false}, {"id": 125, "name": "dialog.tsx", "ext": ".tsx", "size": 4.8805, "color": "#3178C6", "isDir": false}, {"id": 126, "name": "drawer.tsx", "ext": ".tsx", "size": 4.4704999999999995, "color": "#3178C6", "isDir": false}, {"id": 127, "name": "dropdown-menu.tsx", "ext": ".tsx", "size": 6.63, "color": "#3178C6", "isDir": false}, {"id": 128, "name": "form.tsx", "ext": ".tsx", "size": 5.007, "color": "#3178C6", "isDir": false}, {"id": 129, "name": "hover-card.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 130, "name": "input-otp.tsx", "ext": ".tsx", "size": 4.083, "color": "#3178C6", "isDir": false}, {"id": 131, "name": "input.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 132, "name": "label.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 133, "name": "menubar.tsx", "ext": ".tsx", "size": 6.9315, "color": "#3178C6", "isDir": false}, {"id": 134, "name": "navigation-menu.tsx", "ext": ".tsx", "size": 5.515000000000001, "color": "#3178C6", "isDir": false}, {"id": 135, "name": "pagination.tsx", "ext": ".tsx", "size": 4.3415, "color": "#3178C6", "isDir": false}, {"id": 136, "name": "popover.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 137, "name": "progress.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 138, "name": "radio-group.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 139, "name": "resizable.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 140, "name": "scroll-area.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 141, "name": "select.tsx", "ext": ".tsx", "size": 5.7875, "color": "#3178C6", "isDir": false}, {"id": 142, "name": "separator.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 143, "name": "sheet.tsx", "ext": ".tsx", "size": 5.0985, "color": "#3178C6", "isDir": false}, {"id": 144, "name": "sidebar.tsx", "ext": ".tsx", "size": 14.4185, "color": "#3178C6", "isDir": false}, {"id": 145, "name": "skeleton.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 146, "name": "slider.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 147, "name": "sonner.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 148, "name": "switch.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 149, "name": "table.tsx", "ext": ".tsx", "size": 4.3469999999999995, "color": "#3178C6", "isDir": false}, {"id": 150, "name": "tabs.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 151, "name": "textarea.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 152, "name": "toast.tsx", "ext": ".tsx", "size": 5.399, "color": "#3178C6", "isDir": false}, {"id": 153, "name": "toaster.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 154, "name": "toggle-group.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 155, "name": "toggle.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 156, "name": "tooltip.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 157, "name": "use-toast.ts", "ext": ".ts", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 158, "name": "hooks", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 159, "name": "use-mobile.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 160, "name": "use-toast.ts", "ext": ".ts", "size": 4.9675, "color": "#3178C6", "isDir": false}, {"id": 161, "name": "index.css", "ext": ".css", "size": 4.0485, "color": "#563D7C", "isDir": false}, {"id": 162, "name": "lib", "ext": "", "size": 11, "color": "#58A6FF", "isDir": true}, {"id": 163, "name": "api.test.ts", "ext": ".ts", "size": 5.805, "color": "#3178C6", "isDir": false}, {"id": 164, "name": "api.ts", "ext": ".ts", "size": 6.0120000000000005, "color": "#3178C6", "isDir": false}, {"id": 165, "name": "utils.ts", "ext": ".ts", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 166, "name": "main.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 167, "name": "pages", "ext": "", "size": 13, "color": "#58A6FF", "isDir": true}, {"id": 168, "name": "CaseDetail.tsx", "ext": ".tsx", "size": 6.281000000000001, "color": "#3178C6", "isDir": false}, {"id": 169, "name": "Index.tsx", "ext": ".tsx", "size": 4.4925, "color": "#3178C6", "isDir": false}, {"id": 170, "name": "NotFound.tsx", "ext": ".tsx", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 171, "name": "buildRequest.test.ts", "ext": ".ts", "size": 4.129, "color": "#3178C6", "isDir": false}, {"id": 172, "name": "test", "ext": "", "size": 10, "color": "#58A6FF", "isDir": true}, {"id": 173, "name": "example.test.ts", "ext": ".ts", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 174, "name": "setup.ts", "ext": ".ts", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 175, "name": "vite-env.d.ts", "ext": ".ts", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 176, "name": "tailwind.config.ts", "ext": ".ts", "size": 4.6925, "color": "#3178C6", "isDir": false}, {"id": 177, "name": "tsconfig.app.json", "ext": ".json", "size": 4, "color": "#555555", "isDir": false}, {"id": 178, "name": "tsconfig.json", "ext": ".json", "size": 4, "color": "#555555", "isDir": false}, {"id": 179, "name": "tsconfig.node.json", "ext": ".json", "size": 4, "color": "#555555", "isDir": false}, {"id": 180, "name": "vite.config.ts", "ext": ".ts", "size": 4, "color": "#3178C6", "isDir": false}, {"id": 181, "name": "vitest.config.ts", "ext": ".ts", "size": 4, "color": "#3178C6", "isDir": false}];
+const links = [{"source": 0, "target": 1}, {"source": 0, "target": 2}, {"source": 2, "target": 3}, {"source": 2, "target": 4}, {"source": 4, "target": 5}, {"source": 2, "target": 6}, {"source": 2, "target": 7}, {"source": 2, "target": 8}, {"source": 0, "target": 9}, {"source": 0, "target": 10}, {"source": 10, "target": 11}, {"source": 10, "target": 12}, {"source": 10, "target": 13}, {"source": 0, "target": 14}, {"source": 0, "target": 15}, {"source": 0, "target": 16}, {"source": 0, "target": 17}, {"source": 0, "target": 18}, {"source": 0, "target": 19}, {"source": 19, "target": 20}, {"source": 19, "target": 21}, {"source": 19, "target": 22}, {"source": 19, "target": 23}, {"source": 19, "target": 24}, {"source": 19, "target": 25}, {"source": 19, "target": 26}, {"source": 19, "target": 27}, {"source": 19, "target": 28}, {"source": 0, "target": 29}, {"source": 29, "target": 30}, {"source": 30, "target": 31}, {"source": 31, "target": 32}, {"source": 31, "target": 33}, {"source": 33, "target": 34}, {"source": 33, "target": 35}, {"source": 35, "target": 36}, {"source": 33, "target": 37}, {"source": 33, "target": 38}, {"source": 38, "target": 39}, {"source": 39, "target": 40}, {"source": 38, "target": 41}, {"source": 41, "target": 42}, {"source": 38, "target": 43}, {"source": 43, "target": 44}, {"source": 38, "target": 45}, {"source": 45, "target": 46}, {"source": 30, "target": 47}, {"source": 30, "target": 48}, {"source": 30, "target": 49}, {"source": 49, "target": 50}, {"source": 49, "target": 51}, {"source": 51, "target": 52}, {"source": 51, "target": 53}, {"source": 53, "target": 54}, {"source": 51, "target": 55}, {"source": 51, "target": 56}, {"source": 56, "target": 57}, {"source": 57, "target": 58}, {"source": 56, "target": 59}, {"source": 59, "target": 60}, {"source": 29, "target": 61}, {"source": 29, "target": 62}, {"source": 29, "target": 63}, {"source": 29, "target": 64}, {"source": 29, "target": 65}, {"source": 29, "target": 66}, {"source": 29, "target": 67}, {"source": 29, "target": 68}, {"source": 29, "target": 69}, {"source": 69, "target": 70}, {"source": 69, "target": 71}, {"source": 69, "target": 72}, {"source": 69, "target": 73}, {"source": 69, "target": 74}, {"source": 69, "target": 75}, {"source": 69, "target": 76}, {"source": 69, "target": 77}, {"source": 69, "target": 78}, {"source": 0, "target": 79}, {"source": 79, "target": 80}, {"source": 80, "target": 81}, {"source": 80, "target": 82}, {"source": 0, "target": 83}, {"source": 0, "target": 84}, {"source": 0, "target": 85}, {"source": 85, "target": 86}, {"source": 86, "target": 87}, {"source": 85, "target": 88}, {"source": 85, "target": 89}, {"source": 85, "target": 90}, {"source": 85, "target": 91}, {"source": 85, "target": 92}, {"source": 85, "target": 93}, {"source": 85, "target": 94}, {"source": 94, "target": 95}, {"source": 94, "target": 96}, {"source": 94, "target": 97}, {"source": 85, "target": 98}, {"source": 98, "target": 99}, {"source": 98, "target": 100}, {"source": 98, "target": 101}, {"source": 101, "target": 102}, {"source": 101, "target": 103}, {"source": 101, "target": 104}, {"source": 101, "target": 105}, {"source": 101, "target": 106}, {"source": 101, "target": 107}, {"source": 101, "target": 108}, {"source": 108, "target": 109}, {"source": 108, "target": 110}, {"source": 108, "target": 111}, {"source": 108, "target": 112}, {"source": 108, "target": 113}, {"source": 108, "target": 114}, {"source": 108, "target": 115}, {"source": 108, "target": 116}, {"source": 108, "target": 117}, {"source": 108, "target": 118}, {"source": 108, "target": 119}, {"source": 108, "target": 120}, {"source": 108, "target": 121}, {"source": 108, "target": 122}, {"source": 108, "target": 123}, {"source": 108, "target": 124}, {"source": 108, "target": 125}, {"source": 108, "target": 126}, {"source": 108, "target": 127}, {"source": 108, "target": 128}, {"source": 108, "target": 129}, {"source": 108, "target": 130}, {"source": 108, "target": 131}, {"source": 108, "target": 132}, {"source": 108, "target": 133}, {"source": 108, "target": 134}, {"source": 108, "target": 135}, {"source": 108, "target": 136}, {"source": 108, "target": 137}, {"source": 108, "target": 138}, {"source": 108, "target": 139}, {"source": 108, "target": 140}, {"source": 108, "target": 141}, {"source": 108, "target": 142}, {"source": 108, "target": 143}, {"source": 108, "target": 144}, {"source": 108, "target": 145}, {"source": 108, "target": 146}, {"source": 108, "target": 147}, {"source": 108, "target": 148}, {"source": 108, "target": 149}, {"source": 108, "target": 150}, {"source": 108, "target": 151}, {"source": 108, "target": 152}, {"source": 108, "target": 153}, {"source": 108, "target": 154}, {"source": 108, "target": 155}, {"source": 108, "target": 156}, {"source": 108, "target": 157}, {"source": 98, "target": 158}, {"source": 158, "target": 159}, {"source": 158, "target": 160}, {"source": 98, "target": 161}, {"source": 98, "target": 162}, {"source": 162, "target": 163}, {"source": 162, "target": 164}, {"source": 162, "target": 165}, {"source": 98, "target": 166}, {"source": 98, "target": 167}, {"source": 167, "target": 168}, {"source": 167, "target": 169}, {"source": 167, "target": 170}, {"source": 167, "target": 171}, {"source": 98, "target": 172}, {"source": 172, "target": 173}, {"source": 172, "target": 174}, {"source": 98, "target": 175}, {"source": 85, "target": 176}, {"source": 85, "target": 177}, {"source": 85, "target": 178}, {"source": 85, "target": 179}, {"source": 85, "target": 180}, {"source": 85, "target": 181}];
+
+const width = window.innerWidth;
+const height = window.innerHeight;
+
+const svg = d3.select("body").append("svg")
+  .attr("width", width)
+  .attr("height", height)
+  .style("background", "#0D1117");
+
+const g = svg.append("g");
+
+// Zoom behavior
+const zoom = d3.zoom()
+  .scaleExtent([0.1, 8])
+  .on("zoom", (event) => {
+    g.attr("transform", event.transform);
+  });
+svg.call(zoom);
+
+// Force simulation
+const simulation = d3.forceSimulation(nodes)
+  .force("link", d3.forceLink(links).id(d => d.id).distance(d => {
+    const src = nodes.find(n => n.id === (typeof d.source === 'object' ? d.source.id : d.source));
+    return src && src.isDir ? 60 : 30;
+  }).strength(0.8))
+  .force("charge", d3.forceManyBody().strength(d => d.isDir ? -200 : -50))
+  .force("center", d3.forceCenter(width / 2, height / 2))
+  .force("collision", d3.forceCollide().radius(d => d.size + 3))
+  .force("x", d3.forceX(width / 2).strength(0.03))
+  .force("y", d3.forceY(height / 2).strength(0.03));
+
+// Links
+const link = g.append("g")
+  .selectAll("line")
+  .data(links)
+  .join("line")
+  .attr("stroke", "#21262D")
+  .attr("stroke-width", 0.8)
+  .attr("stroke-opacity", 0.6);
+
+// Nodes
+const node = g.append("g")
+  .selectAll("g")
+  .data(nodes)
+  .join("g")
+  .call(d3.drag()
+    .on("start", dragstarted)
+    .on("drag", dragged)
+    .on("end", dragended));
+
+node.append("circle")
+  .attr("r", d => d.size)
+  .attr("fill", d => d.color)
+  .attr("opacity", d => d.isDir ? 0.3 : 0.85)
+  .attr("stroke", d => d.isDir ? d.color : "none")
+  .attr("stroke-width", d => d.isDir ? 2 : 0);
+
+// Labels for directories and large files
+node.filter(d => d.isDir || d.size > 8)
+  .append("text")
+  .text(d => {
+    const n = d.name;
+    return n.length > 16 ? n.slice(0, 13) + "..." : n;
+  })
+  .attr("text-anchor", "middle")
+  .attr("dy", d => d.isDir ? -d.size - 5 : d.size + 12)
+  .attr("fill", d => d.isDir ? "#58A6FF" : "#8B949E")
+  .attr("font-size", d => d.isDir ? "12px" : "9px")
+  .attr("font-family", "monospace")
+  .attr("font-weight", d => d.isDir ? "600" : "400")
+  .attr("pointer-events", "none");
+
+// Tooltip
+const tooltip = d3.select("#tooltip");
+node.on("mouseover", (event, d) => {
+  tooltip.style("display", "block")
+    .html(`<strong>${d.name}</strong>${d.ext ? " (" + d.ext + ")" : " (directory)"}`)
+    .style("left", (event.pageX + 15) + "px")
+    .style("top", (event.pageY - 10) + "px");
+  d3.select(event.currentTarget).select("circle")
+    .attr("stroke", "#58A6FF").attr("stroke-width", 2);
+})
+.on("mouseout", (event, d) => {
+  tooltip.style("display", "none");
+  d3.select(event.currentTarget).select("circle")
+    .attr("stroke", d.isDir ? d.color : "none")
+    .attr("stroke-width", d.isDir ? 2 : 0);
+});
+
+simulation.on("tick", () => {
+  link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+  node.attr("transform", d => `translate(${d.x},${d.y})`);
+});
+
+function dragstarted(event) {
+  if (!event.active) simulation.alphaTarget(0.3).restart();
+  event.subject.fx = event.subject.x;
+  event.subject.fy = event.subject.y;
+}
+function dragged(event) {
+  event.subject.fx = event.x;
+  event.subject.fy = event.y;
+}
+function dragended(event) {
+  if (!event.active) simulation.alphaTarget(0);
+  event.subject.fx = null;
+  event.subject.fy = null;
+}
+
+function resetZoom() {
+  svg.transition().duration(750).call(zoom.transform, d3.zoomIdentity);
+}
+
+// Initial slight zoom out so everything fits
+svg.call(zoom.transform, d3.zoomIdentity.translate(0, 0).scale(0.85));
+</script>
+</body>
+</html>
