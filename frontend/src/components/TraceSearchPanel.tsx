@@ -60,13 +60,13 @@ const TraceSearchPanel = ({ form, onFieldChange, onSubmit, isPending }: TraceSea
       {/* Visual Evidence */}
       <div className="mb-6">
         <label className="text-trace-label block mb-2">VISUAL EVIDENCE (OPTIONAL)</label>
-        <div className="border border-dashed border-border rounded-md p-8 flex flex-col items-center justify-center gap-2 bg-input/50 cursor-pointer hover:border-muted-foreground transition-colors">
+        <div className="border border-dashed border-border rounded-md p-8 flex flex-col items-center justify-center gap-2 bg-input/50 opacity-50">
           <Camera size={24} className="text-muted-foreground" />
           <p className="text-xs text-muted-foreground text-center font-mono tracking-wide uppercase">
-            UPLOAD TATTOO OR IDENTIFYING PHOTO
+            CLIP IMAGE SEARCH
           </p>
-          <p className="text-xs text-muted-foreground font-mono tracking-wide uppercase">
-            DRAG AND DROP TO ATTACH
+          <p className="text-xs text-muted-foreground/60 font-mono tracking-wide uppercase text-[0.6rem]">
+            COMING SOON
           </p>
         </div>
       </div>

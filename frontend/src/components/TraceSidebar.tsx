@@ -1,19 +1,11 @@
-import { LayoutDashboard, Search, Radio, FileText, Terminal, Plus, Shield, Settings } from "lucide-react";
-
-const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", active: true },
-  { icon: Search, label: "Investigations" },
-  { icon: Radio, label: "Evidence" },
-  { icon: FileText, label: "Reports" },
-  { icon: Terminal, label: "System Logs" },
-];
-
-const bottomItems = [
-  { icon: Shield, label: "Security" },
-  { icon: Settings, label: "Settings" },
-];
+import { Search, Plus } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const TraceSidebar = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isSearch = location.pathname === "/";
+
   return (
     <aside className="w-56 flex flex-col bg-sidebar border-r border-border shrink-0">
       {/* Brand */}
@@ -24,40 +16,28 @@ const TraceSidebar = () => {
 
       {/* Main nav */}
       <nav className="flex-1 flex flex-col gap-0.5 px-3">
-        {navItems.map((item) => (
-          <button
-            key={item.label}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
-              item.active
-                ? "bg-sidebar-accent text-primary"
-                : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            }`}
-          >
-            <item.icon size={16} />
-            <span className="font-mono text-xs tracking-wide uppercase">{item.label}</span>
-          </button>
-        ))}
+        <button
+          onClick={() => navigate("/")}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+            isSearch
+              ? "bg-sidebar-accent text-primary"
+              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          }`}
+        >
+          <Search size={16} />
+          <span className="font-mono text-xs tracking-wide uppercase">Search</span>
+        </button>
       </nav>
 
       {/* New Query Button */}
-      <div className="px-3 mb-4">
-        <button className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-md py-2.5 text-xs font-mono font-semibold tracking-wider uppercase hover:bg-primary/90 transition-colors">
+      <div className="px-3 pb-5">
+        <button
+          onClick={() => navigate("/")}
+          className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-md py-2.5 text-xs font-mono font-semibold tracking-wider uppercase hover:bg-primary/90 transition-colors"
+        >
           <Plus size={14} />
           NEW_QUERY
         </button>
-      </div>
-
-      {/* Bottom nav */}
-      <div className="px-3 pb-5 flex flex-col gap-0.5">
-        {bottomItems.map((item) => (
-          <button
-            key={item.label}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-          >
-            <item.icon size={16} />
-            <span className="font-mono text-xs tracking-wide uppercase">{item.label}</span>
-          </button>
-        ))}
       </div>
     </aside>
   );
