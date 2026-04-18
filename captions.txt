@@ -1,0 +1,52 @@
+1776207385|Initial commit
+1776207710|Revise README to enhance project description and details
+1776271834|add frontend from Lovable
+1776277014|scaffold backend
+1776280739|add PLAN.md implementation tracker and scaffold dev environment
+1776281108|lock decision D1: one collection with 4 named vectors
+1776295930|lock ownership split + O4 date schema; write requirements.txt
+1776297364|add config, schemas, synthetic cases; pin transformers<5.0
+1776298603|align schemas to PLAN.md + tighten invariants
+1776299123|add docker-compose for Actian VectorAI DB at repo root
+1776300046|harden docker setup + docs for demo day
+1776301410|feat(backend): scaffold ingest pipeline with injectable embedders
+1776301429|docs(plan): mark Task 2.7 as scaffold-complete
+1776302179|fix(backend): harden ingest scaffold per cold review
+1776302597|chore(frontend): drop bun lockfiles — npm is the chosen package manager
+1776303612|feat(frontend): add typed API client (Task 3.1)
+1776303854|fix(frontend): harden API client per cold review
+1776304535|feat(backend): add embedding wrappers for SapBERT, BGE-M3, and CLIP
+1776304547|feat(frontend): wire search form + live results rendering (Tasks 3.2–3.4)
+1776304895|fix(frontend): harden form wiring per cold review
+1776305190|fix(frontend): full-stack review — five frontend fixes
+1776307128|update PLAN.md: mark 2.7 ingest + 4.2 real DB run complete
+1776307806|docs(backend): add docstrings to all embeddings.py functions and constants
+1776309114|feat(backend): add filter DSL builder with age-range overlap semantics
+1776309734|add backend test suite for schemas, config, and synthetic data (Task 2.10)
+1776309748|update PLAN.md: mark Task 2.10 backend tests complete
+1776310829|feat(frontend): wire up case detail page at /case/:caseId
+1776310908|docs: polish README for judges with demo moment and vector architecture
+1776311345|docs: add demo script with Stephen/Vinh two-speaker split (Task 5.1)
+1776311904|docs: add DoraHacks BUIDL submission draft with Profile-page mapping
+1776313855|chore: gitignore local scratch folders (logo assets, background PDF)
+1776321991|feat(backend): add hybrid RRF search engine with why-matched breakdown
+1776322238|docs: Day 4 status update — search engine implementation and test fixes
+1776376183|fix(backend): harden main.py lifespan, /health logging, /case 404 + add test_main.py
+1776388414|fix: CORS port alignment, error handling, branding cleanup, realistic confidence scores
+1776390978|docs: update DEMO_SCRIPT to match actual search results (MP-001, not UP-001)
+1776392428|docs: add fourth match row (clothing_effects) to demo script
+1776393657|feat(frontend): add case_type filter dropdown for demo semantic bridge
+1776393733|docs: update DEMO_SCRIPT for case_type filter and UP-001 forensic bridge
+1776394879|fix: lower confidence thresholds for cross-vocabulary matching
+1776395456|docs: sync DEMO_SCRIPT with actual UI row order and scores
+1776401445|docs: add repo visualization assets (force graph, bubble diagram, Gource video)
+1776401854|docs: add Gource time-lapse to demo script closing
+1776446591|fix(frontend): remove dead UI elements, keep only functional controls
+1776447143|feat(search): improve confidence using best chunk-level similarity
+1776468800|feat: clause-level matching (0.79 HIGH), CLIP image upload, code review fixes
+1776470374|feat: test coverage, case detail polish, and review fixes
+1776470443|fix(frontend): remove demo preview banner from results panel
+1776470879|docs: update README, demo script, and submission for current state
+1776471953|feat: add interactive 3D knowledge graph for architecture visualization
+1776472590|fix(frontend): remove mock results from landing page
+1776476340|feat: upgrade 3D knowledge graph with bloom, hover highlighting, stars, and fog
