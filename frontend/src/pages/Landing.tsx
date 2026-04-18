@@ -14,64 +14,108 @@ interface GraphNode {
 }
 
 const RAW_NODES = [
-  { id: "trace",           label: "Trace",               community: 1 },
-  { id: "crisis",          label: "Missing Persons\nCrisis",      community: 2 },
-  { id: "namus",           label: "NamUs",               community: 4 },
-  { id: "lang_gap",        label: "Language Gap",        community: 4 },
-  { id: "kw_fail",         label: "Keyword Search\nFailure",  community: 4 },
-  { id: "vec_search",      label: "Vector Search",       community: 1 },
-  { id: "actian",          label: "Actian\nVectorAI",    community: 0 },
-  { id: "named_vecs",      label: "Named Vectors",       community: 3 },
-  { id: "rrf",             label: "RRF Fusion",          community: 1 },
-  { id: "bge",             label: "BGE-M3",              community: 3 },
-  { id: "sapbert",         label: "SapBERT",             community: 3 },
-  { id: "clip",            label: "CLIP ViT",            community: 5 },
-  { id: "tattoo",          label: "Tattoo\nProblem",     community: 5 },
-  { id: "disparity",       label: "Demographic\nDisparity",   community: 2 },
-  { id: "cost",            label: "$1.5B\nAnnual Cost",  community: 2 },
-  { id: "unidentified",    label: "40k\nUnidentified",   community: 2 },
-  { id: "missing",         label: "600k\nMissing/yr",    community: 2 },
-  { id: "pipeline",        label: "Query\nPipeline",     community: 1 },
-  { id: "filter",          label: "Hard Filter",         community: 1 },
-  { id: "demo",            label: "Demo Moment",         community: 1 },
-  { id: "why_matched",     label: "Why This\nMatched",   community: 1 },
-  { id: "local_first",     label: "Local-First",         community: 0 },
-  { id: "ethics",          label: "Ethical\nFraming",    community: 0 },
-  { id: "phys_vec",        label: "physical_vec",        community: 3 },
-  { id: "circ_vec",        label: "circumstances_vec",   community: 3 },
-  { id: "cloth_vec",       label: "clothing_vec",        community: 3 },
-  { id: "image_vec",       label: "image_vec",           community: 5 },
-  { id: "benton",          label: "Benton\nCounty Case", community: 5 },
-  { id: "silent_disaster", label: "Silent Mass\nDisaster", community: 2 },
+  // Frontend / UI (community 5)
+  { id: "react_ui",      label: "React\nFrontend",        community: 5 },
+  { id: "search_panel",  label: "Search\nPanel",          community: 5 },
+  { id: "results_panel", label: "Results\nPanel",         community: 5 },
+  { id: "case_detail",   label: "Case\nDetail",           community: 5 },
+  // Backend / API (community 1)
+  { id: "fastapi",       label: "FastAPI",                community: 1 },
+  { id: "search_ep",     label: "POST\n/search",          community: 1 },
+  { id: "image_ep",      label: "POST\n/search/image",    community: 1 },
+  { id: "docker",        label: "Docker",                 community: 1 },
+  // Database layer (community 0)
+  { id: "actian",        label: "Actian\nVectorAI DB",    community: 0 },
+  { id: "grpc",          label: "gRPC\nTransport",        community: 0 },
+  { id: "collection",    label: "Cases\nCollection",      community: 0 },
+  // Named vectors (community 4)
+  { id: "phys_vec",      label: "physical_vec",           community: 4 },
+  { id: "circ_vec",      label: "circumstances_vec",      community: 4 },
+  { id: "cloth_vec",     label: "clothing_vec",           community: 4 },
+  { id: "image_vec",     label: "image_vec",              community: 4 },
+  // Embedding models (community 3)
+  { id: "bge",           label: "BGE-M3",                 community: 3 },
+  { id: "sapbert",       label: "SapBERT",                community: 3 },
+  { id: "clip",          label: "CLIP\nViT-B/32",         community: 3 },
+  { id: "dense",         label: "Dense\nEmbed",           community: 3 },
+  { id: "sparse",        label: "Sparse\nEmbed",          community: 3 },
+  // Query pipeline (community 2)
+  { id: "pipeline",      label: "Query\nPipeline",        community: 2 },
+  { id: "hard_filter",   label: "Hard\nFilter",           community: 2 },
+  { id: "multi_ret",     label: "Multi-Vector\nRetrieve", community: 2 },
+  { id: "rrf",           label: "RRF\nFusion k=60",       community: 2 },
+  { id: "ranked_out",    label: "Ranked\nOutput",         community: 2 },
 ];
 
 const EDGES: [string, string][] = [
-  ["trace", "crisis"], ["trace", "vec_search"], ["trace", "actian"], ["trace", "ethics"],
-  ["trace", "namus"], ["namus", "kw_fail"], ["lang_gap", "kw_fail"],
-  ["vec_search", "kw_fail"], ["vec_search", "named_vecs"], ["vec_search", "rrf"],
-  ["crisis", "missing"], ["crisis", "unidentified"], ["crisis", "cost"],
-  ["crisis", "disparity"], ["crisis", "silent_disaster"],
-  ["named_vecs", "phys_vec"], ["named_vecs", "circ_vec"],
-  ["named_vecs", "cloth_vec"], ["named_vecs", "image_vec"],
-  ["bge", "circ_vec"], ["bge", "cloth_vec"], ["sapbert", "phys_vec"],
-  ["sapbert", "lang_gap"], ["clip", "image_vec"], ["clip", "tattoo"],
-  ["tattoo", "lang_gap"], ["benton", "tattoo"],
-  ["pipeline", "filter"], ["pipeline", "named_vecs"],
-  ["pipeline", "rrf"], ["pipeline", "why_matched"],
-  ["demo", "pipeline"], ["demo", "why_matched"],
-  ["local_first", "ethics"], ["disparity", "ethics"],
+  // UI wiring
+  ["react_ui", "search_panel"], ["react_ui", "results_panel"], ["react_ui", "case_detail"],
+  ["react_ui", "search_ep"], ["react_ui", "image_ep"],
+  // Backend
+  ["docker", "fastapi"], ["fastapi", "search_ep"], ["fastapi", "image_ep"],
+  ["fastapi", "grpc"],
+  // DB layer
+  ["grpc", "actian"], ["actian", "collection"],
+  ["collection", "phys_vec"], ["collection", "circ_vec"],
+  ["collection", "cloth_vec"], ["collection", "image_vec"],
+  // Embeddings → vectors
+  ["sapbert", "phys_vec"], ["bge", "circ_vec"], ["bge", "cloth_vec"], ["clip", "image_vec"],
+  ["bge", "dense"], ["bge", "sparse"],
+  // Pipeline flow
+  ["search_ep", "pipeline"], ["image_ep", "pipeline"],
+  ["pipeline", "hard_filter"], ["hard_filter", "multi_ret"],
+  ["multi_ret", "rrf"], ["rrf", "ranked_out"], ["ranked_out", "results_panel"],
+  // Pipeline touches DB
+  ["multi_ret", "actian"],
 ];
 
 const COMMUNITY_COLORS: Record<number, string> = {
-  0: "hsl(200,60%,55%)",
-  1: "hsl(211,70%,60%)",
-  2: "hsl(0,65%,60%)",
-  3: "hsl(270,55%,65%)",
-  4: "hsl(180,55%,50%)",
-  5: "hsl(30,75%,57%)",
+  0: "hsl(200,60%,55%)",   // DB layer — teal
+  1: "hsl(211,70%,60%)",   // Backend — blue
+  2: "hsl(180,55%,50%)",   // Pipeline — cyan
+  3: "hsl(270,55%,65%)",   // Embeddings — purple
+  4: "hsl(30,75%,57%)",    // Named vectors — orange
+  5: "hsl(150,50%,52%)",   // Frontend — green
 };
 
-const GOD_NODES = new Set(["trace", "crisis", "vec_search", "named_vecs", "pipeline"]);
+const GOD_NODES = new Set(["fastapi", "actian", "pipeline", "bge", "collection"]);
+
+const COMMUNITY_LABELS: Record<number, string> = {
+  0: "Database Layer",
+  1: "Backend / API",
+  2: "Query Pipeline",
+  3: "Embedding Models",
+  4: "Named Vectors",
+  5: "Frontend / UI",
+};
+
+const NODE_DESC: Record<string, string> = {
+  react_ui:      "Vite + React 18 · TypeScript · Tailwind · React Query for async state",
+  search_panel:  "Query input, filter controls (sex, age, state, date), image upload",
+  results_panel: "Ranked result cards with per-dimension scores and why-matched panel",
+  case_detail:   "Full case view — all vector scores, semantic bridge table, NamUs link",
+  fastapi:       "Python FastAPI · async endpoints · Pydantic validation · runs in Docker",
+  search_ep:     "POST /search — text query → embed → filter → retrieve → RRF → rank",
+  image_ep:      "POST /search/image · multipart upload → CLIP encode → image_vec search",
+  docker:        "Single Docker container · offline after model download · ARM-compatible",
+  actian:        "Actian VectorAI DB · named vector spaces · native filter DSL · gRPC",
+  grpc:          "gRPC transport between FastAPI and Actian · low-latency binary protocol",
+  collection:    "cases collection · 60 synthetic records · four named vector dimensions",
+  phys_vec:      "physical_vec · SapBERT 768-dim · scars, tattoos, anatomical features",
+  circ_vec:      "circumstances_vec · BGE-M3 1024-dim · disappearance narrative & location",
+  cloth_vec:     "clothing_vec · BGE-M3 1024-dim · apparel, jewelry, personal effects",
+  image_vec:     "image_vec · CLIP 512-dim · tattoo photos · cross-modal text ↔ image",
+  bge:           "BGE-M3 by BAAI · dense + sparse in one forward pass · 1024-dim · multilingual",
+  sapbert:       "SapBERT by Cambridge · self-aligned on 4M+ UMLS concepts · 768-dim",
+  clip:          "CLIP ViT-B/32 by OpenAI · text and image in same embedding space · 512-dim",
+  dense:         "Dense vector output from BGE-M3 · semantic similarity · cosine distance",
+  sparse:        "Sparse vector output from BGE-M3 · term-weight pairs · replaces BM25",
+  pipeline:      "4-stage: hard filter → multi-vector retrieve → RRF fuse → ranked output",
+  hard_filter:   "Sex, age range, state, date window — eliminates impossible matches first",
+  multi_ret:     "Each named vector space searched independently · results collected per dim",
+  rrf:           "Reciprocal Rank Fusion k=60 · merges 4 ranked lists · no tuning required",
+  ranked_out:    "Top-k results with confidence score, per-dim breakdown, semantic bridge",
+};
 
 // ── Terminology translation table ────────────────────────────────────────────
 const TRANSLATIONS = [
@@ -120,10 +164,11 @@ const STACK_ITEMS = [
 
 // ── Knowledge Graph Canvas Component ────────────────────────────────────────
 function GraphCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const nodesRef  = useRef<GraphNode[]>([]);
-  const rafRef    = useRef<number>(0);
-  const mouseRef  = useRef({ x: -9999, y: -9999 });
+  const canvasRef    = useRef<HTMLCanvasElement>(null);
+  const nodesRef     = useRef<GraphNode[]>([]);
+  const rafRef       = useRef<number>(0);
+  const hoveredIdRef = useRef<string | null>(null);
+  const [tooltip, setTooltip] = useState<{ mx: number; my: number; node: GraphNode } | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -186,16 +231,6 @@ function GraphCanvas() {
         n.vx += (W * 0.5 - n.x) * 0.0012;
         n.vy += (H * 0.5 - n.y) * 0.0012;
       }
-      // Mouse repulsion
-      for (const n of ns) {
-        const dx = n.x - mouseRef.current.x;
-        const dy = n.y - mouseRef.current.y;
-        const d  = Math.sqrt(dx * dx + dy * dy) || 1;
-        if (d < 130) {
-          const f = (130 - d) * 0.14;
-          n.vx += (dx / d) * f; n.vy += (dy / d) * f;
-        }
-      }
       // Integrate
       const pad = 56;
       for (const n of ns) {
@@ -238,10 +273,13 @@ function GraphCanvas() {
           ctx.fillStyle = g; ctx.fill();
         }
         // Circle
-        ctx.beginPath(); ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
-        ctx.fillStyle = color.replace("hsl(", "hsla(").replace(")", ",0.8)");
+        const isHovered = hoveredIdRef.current === n.id;
+        const r = isHovered ? n.radius * 1.5 : n.radius;
+        ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = color.replace("hsl(", "hsla(").replace(")", isHovered ? ",1)" : ",0.8)");
         ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,0.12)"; ctx.lineWidth = 0.5; ctx.stroke();
+        ctx.strokeStyle = isHovered ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.12)";
+        ctx.lineWidth = isHovered ? 1.5 : 0.5; ctx.stroke();
         // Label
         ctx.font = `500 8.5px 'JetBrains Mono', monospace`;
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -257,30 +295,70 @@ function GraphCanvas() {
 
     const onMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
-      mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      let nearest: GraphNode | null = null;
+      let nearestD = Infinity;
+      for (const n of nodesRef.current) {
+        const d = Math.sqrt((n.x - mx) ** 2 + (n.y - my) ** 2);
+        if (d < n.radius + 28 && d < nearestD) { nearest = n; nearestD = d; }
+      }
+      const newId = nearest?.id ?? null;
+      if (newId !== hoveredIdRef.current) {
+        hoveredIdRef.current = newId;
+        setTooltip(nearest ? { mx: e.clientX, my: e.clientY, node: nearest } : null);
+      }
     };
-    const onMouseLeave = () => { mouseRef.current = { x: -9999, y: -9999 }; };
+
+    const onMouseLeave = () => {
+      hoveredIdRef.current = null;
+      setTooltip(null);
+    };
+
+    // Attach to the section so events bubble up from all children (text, buttons, etc.)
+    const section = canvas.closest("section") as HTMLElement | null;
+    const eventTarget = section ?? canvas;
 
     resize();
     window.addEventListener("resize", resize);
-    canvas.addEventListener("mousemove", onMouseMove);
-    canvas.addEventListener("mouseleave", onMouseLeave);
+    eventTarget.addEventListener("mousemove", onMouseMove);
+    eventTarget.addEventListener("mouseleave", onMouseLeave);
     loop();
 
     return () => {
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener("resize", resize);
-      canvas.removeEventListener("mousemove", onMouseMove);
-      canvas.removeEventListener("mouseleave", onMouseLeave);
+      eventTarget.removeEventListener("mousemove", onMouseMove);
+      eventTarget.removeEventListener("mouseleave", onMouseLeave);
     };
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="absolute inset-0 w-full h-full"
-      style={{ opacity: 0.32 }}
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full"
+        style={{ opacity: 0.32 }}
+      />
+      {tooltip && (
+        <div
+          className="fixed z-[9999] pointer-events-none"
+          style={{ left: tooltip.mx + 16, top: tooltip.my - 8 }}
+        >
+          <div className="bg-card border border-border rounded px-3 py-2.5 shadow-xl max-w-[240px]">
+            <div className="font-mono text-[10px] tracking-[0.12em] uppercase text-primary mb-1">
+              {COMMUNITY_LABELS[tooltip.node.community]}
+            </div>
+            <div className="font-semibold text-[13px] text-foreground mb-1 leading-snug">
+              {tooltip.node.label.replace("\n", " ")}
+            </div>
+            <div className="font-mono text-[10px] text-muted-foreground leading-relaxed">
+              {NODE_DESC[tooltip.node.id] ?? ""}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -384,15 +462,15 @@ export default function Landing() {
 
         {/* Graph legend */}
         <div className="absolute bottom-8 right-8 z-10">
-          <p className="font-mono text-[9px] tracking-[0.15em] uppercase text-muted-foreground/50 mb-2">Knowledge Graph · Trace Architecture</p>
+          <p className="font-mono text-[9px] tracking-[0.15em] uppercase text-muted-foreground/50 mb-2">System Architecture Graph</p>
           <div className="flex flex-col gap-1.5">
             {[
-              { color: "hsl(0,65%,60%)",   label: "Human Impact" },
-              { color: "hsl(211,70%,60%)", label: "Query Pipeline" },
-              { color: "hsl(270,55%,65%)", label: "Embeddings" },
-              { color: "hsl(180,55%,50%)", label: "Language Gap" },
-              { color: "hsl(30,75%,57%)",  label: "Tattoo / Image" },
-              { color: "hsl(200,60%,55%)", label: "Ethics" },
+              { color: "hsl(150,50%,52%)", label: "Frontend / UI" },
+              { color: "hsl(211,70%,60%)", label: "Backend / API" },
+              { color: "hsl(200,60%,55%)", label: "Database Layer" },
+              { color: "hsl(180,55%,50%)", label: "Query Pipeline" },
+              { color: "hsl(270,55%,65%)", label: "Embedding Models" },
+              { color: "hsl(30,75%,57%)",  label: "Named Vectors" },
             ].map((l, i) => (
               <div key={i} className="flex items-center gap-2">
                 <div className="w-[7px] h-[7px] rounded-full flex-shrink-0" style={{ background: l.color }} />
