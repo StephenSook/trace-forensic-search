@@ -94,14 +94,6 @@ const TraceResultsPanel = ({ data, isPending, error }: TraceResultsPanelProps) =
         </div>
       )}
 
-      {/* Demo banner when showing mock data */}
-      {!isPending && showMocks && results.length > 0 && (
-        <div className="mb-4 border border-amber-500/40 rounded-md px-4 py-2 bg-amber-500/10">
-          <span className="text-xs font-mono font-bold text-amber-400 tracking-wider">
-            DEMO_PREVIEW — SAMPLE DATA SHOWN BELOW
-          </span>
-        </div>
-      )}
 
       {/* Result Cards */}
       {!isPending && results.length > 0 && (
