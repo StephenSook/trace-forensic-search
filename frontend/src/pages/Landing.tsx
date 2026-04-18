@@ -29,16 +29,15 @@ const RAW_NODES = [
   { id: "grpc",          label: "gRPC\nTransport",        community: 0 },
   { id: "collection",    label: "Cases\nCollection",      community: 0 },
   // Named vectors (community 4)
-  { id: "phys_vec",      label: "physical_vec",           community: 4 },
-  { id: "circ_vec",      label: "circumstances_vec",      community: 4 },
-  { id: "cloth_vec",     label: "clothing_vec",           community: 4 },
-  { id: "image_vec",     label: "image_vec",              community: 4 },
+  { id: "phys_vec",      label: "physical_text",          community: 4 },
+  { id: "circ_vec",      label: "circumstances",          community: 4 },
+  { id: "cloth_vec",     label: "clothing",               community: 4 },
+  { id: "image_vec",     label: "physical_image",         community: 4 },
   // Embedding models (community 3)
   { id: "bge",           label: "BGE-M3",                 community: 3 },
   { id: "sapbert",       label: "SapBERT",                community: 3 },
   { id: "clip",          label: "CLIP\nViT-B/32",         community: 3 },
   { id: "dense",         label: "Dense\nEmbed",           community: 3 },
-  { id: "sparse",        label: "Sparse\nEmbed",          community: 3 },
   // Query pipeline (community 2)
   { id: "pipeline",      label: "Query\nPipeline",        community: 2 },
   { id: "hard_filter",   label: "Hard\nFilter",           community: 2 },
@@ -60,7 +59,7 @@ const EDGES: [string, string][] = [
   ["collection", "cloth_vec"], ["collection", "image_vec"],
   // Embeddings → vectors
   ["sapbert", "phys_vec"], ["bge", "circ_vec"], ["bge", "cloth_vec"], ["clip", "image_vec"],
-  ["bge", "dense"], ["bge", "sparse"],
+  ["bge", "dense"],
   // Pipeline flow
   ["search_ep", "pipeline"], ["image_ep", "pipeline"],
   ["pipeline", "hard_filter"], ["hard_filter", "multi_ret"],
@@ -94,22 +93,21 @@ const NODE_DESC: Record<string, string> = {
   search_panel:  "Query input, filter controls (sex, age, state, date), image upload",
   results_panel: "Ranked result cards with per-dimension scores and why-matched panel",
   case_detail:   "Full case view — all vector scores, semantic bridge table, NamUs link",
-  fastapi:       "Python FastAPI · async endpoints · Pydantic validation · runs in Docker",
+  fastapi:       "Python FastAPI · async endpoints · Pydantic validation · uvicorn server",
   search_ep:     "POST /search — text query → embed → filter → retrieve → RRF → rank",
-  image_ep:      "POST /search/image · multipart upload → CLIP encode → image_vec search",
-  docker:        "Single Docker container · offline after model download · ARM-compatible",
+  image_ep:      "POST /search/image · multipart upload → CLIP encode → physical_image search",
+  docker:        "Actian VectorAI DB runs in Docker · offline after model download · local-first",
   actian:        "Actian VectorAI DB · named vector spaces · native filter DSL · gRPC",
   grpc:          "gRPC transport between FastAPI and Actian · low-latency binary protocol",
   collection:    "cases collection · 60 synthetic records · four named vector dimensions",
-  phys_vec:      "physical_vec · SapBERT 768-dim · scars, tattoos, anatomical features",
-  circ_vec:      "circumstances_vec · BGE-M3 1024-dim · disappearance narrative & location",
-  cloth_vec:     "clothing_vec · BGE-M3 1024-dim · apparel, jewelry, personal effects",
-  image_vec:     "image_vec · CLIP 512-dim · tattoo photos · cross-modal text ↔ image",
-  bge:           "BGE-M3 by BAAI · dense + sparse in one forward pass · 1024-dim · multilingual",
+  phys_vec:      "physical_text · SapBERT 768-dim · scars, tattoos, anatomical features",
+  circ_vec:      "circumstances · BGE-M3 1024-dim · disappearance narrative & location",
+  cloth_vec:     "clothing · BGE-M3 1024-dim · apparel, jewelry, personal effects",
+  image_vec:     "physical_image · CLIP 512-dim · tattoo photos · cross-modal text ↔ image",
+  bge:           "BGE-M3 by BAAI · dense embeddings · 1024-dim · multilingual",
   sapbert:       "SapBERT by Cambridge · self-aligned on 4M+ UMLS concepts · 768-dim",
   clip:          "CLIP ViT-B/32 by OpenAI · text and image in same embedding space · 512-dim",
   dense:         "Dense vector output from BGE-M3 · semantic similarity · cosine distance",
-  sparse:        "Sparse vector output from BGE-M3 · term-weight pairs · replaces BM25",
   pipeline:      "4-stage: hard filter → multi-vector retrieve → RRF fuse → ranked output",
   hard_filter:   "Sex, age range, state, date window — eliminates impossible matches first",
   multi_ret:     "Each named vector space searched independently · results collected per dim",
@@ -119,7 +117,7 @@ const NODE_DESC: Record<string, string> = {
 
 // ── Terminology translation table ────────────────────────────────────────────
 const TRANSLATIONS = [
-  { fam: "Eagle tattoo, left arm",       for_: "Avian motif dermagraphic, left lateral appendage" },
+  { fam: "Eagle tattoo, right forearm",   for_: "Avian motif dermagraphic, right ventral antebrachium" },
   { fam: "Bruise",                        for_: "Contusion / Hemorrhage / Petechiae" },
   { fam: "Birthmark on left shoulder",   for_: "Pigmented lesion, left dorsal region" },
   { fam: "He had bad teeth",             for_: "Multiple carious lesions, #14 and #19 absent" },
@@ -132,16 +130,16 @@ const TRANSLATIONS = [
 // ── Pipeline steps ───────────────────────────────────────────────────────────
 const PIPELINE_STEPS = [
   { num: "01", name: "Hard Filter", desc: "Sex, age range, geography, and date window eliminate impossible matches before any vector computation. Fast. Cheap. Accurate." },
-  { num: "02", name: "Named Vector Search", desc: "BGE-M3 embeds dense + sparse in one pass. physical_vec, circumstances_vec, clothing_vec, image_vec each searched independently." },
-  { num: "03", name: "RRF Fusion (k=60)", desc: "Reciprocal Rank Fusion merges dense, sparse, and image result lists. Parameter-free. Consistently outperforms linear weighting." },
+  { num: "02", name: "Named Vector Search", desc: "BGE-M3 dense embeddings. physical_text, circumstances, clothing, physical_image each searched independently." },
+  { num: "03", name: "RRF Fusion (k=60)", desc: "Reciprocal Rank Fusion merges four ranked result lists. Parameter-free. Consistently outperforms linear weighting." },
   { num: "04", name: "Ranked + Explained", desc: "Top candidates with per-dimension score breakdown, semantic bridge panel, and direct NamUs case link." },
 ];
 
 const VECTOR_DIMS = [
-  { tag: "physical_vec",      model: "SapBERT · 768-dim",          items: ["Anatomical features", "Scars & marks", "Tattoo descriptions", "Dental records"] },
-  { tag: "circumstances_vec", model: "BGE-M3 · 1024-dim",          items: ["Disappearance narrative", "Recovery environment", "Location context", "Last known activity"] },
-  { tag: "clothing_vec",      model: "BGE-M3 · 1024-dim",          items: ["Apparel description", "Personal effects", "Jewelry & accessories", "Brand / color"] },
-  { tag: "image_vec",         model: "CLIP ViT-B/32 · 512-dim",    items: ["Tattoo photo upload", "Cross-modal: text ↔ image", "~80ms CPU inference", "Upload or describe"] },
+  { tag: "physical_text",     model: "SapBERT · 768-dim",          items: ["Anatomical features", "Scars & marks", "Tattoo descriptions", "Dental records"] },
+  { tag: "circumstances",    model: "BGE-M3 · 1024-dim",          items: ["Disappearance narrative", "Recovery environment", "Location context", "Last known activity"] },
+  { tag: "clothing",         model: "BGE-M3 · 1024-dim",          items: ["Apparel description", "Personal effects", "Jewelry & accessories", "Brand / color"] },
+  { tag: "physical_image",   model: "CLIP ViT-B/32 · 512-dim",    items: ["Tattoo photo upload", "Cross-modal: text ↔ image", "~80ms CPU inference", "Upload or describe"] },
 ];
 
 const COMP_ROWS = [
@@ -155,11 +153,11 @@ const COMP_ROWS = [
 
 const STACK_ITEMS = [
   { role: "Vector Database",   name: "Actian VectorAI DB",  note: "Named vectors, filtered search, gRPC transport — the only architecture that makes this work" },
-  { role: "Primary Embedding", name: "BGE-M3",              note: "Dense + sparse in one forward pass. Eliminates separate BM25 index. 1024-dim." },
+  { role: "Primary Embedding", name: "BGE-M3",              note: "Dense embeddings in one forward pass. 1024-dim. Multilingual. Handles both circumstances and clothing." },
   { role: "Clinical NLP",      name: "SapBERT",             note: "Self-aligned on 4M+ UMLS medical concepts. Maps 'bruise' and 'contusion' to the same region." },
   { role: "Multimodal",        name: "CLIP ViT-B/32",       note: "Cross-modal: upload a tattoo photo or type a description — both search the same image collection." },
   { role: "Fusion Algorithm",  name: "RRF (k=60)",          note: "Reciprocal Rank Fusion. Parameter-free. Robust. No tuning required." },
-  { role: "Deployment",        name: "Docker · Offline",    note: "Fully local. No internet after model download. ARM-compatible. FastAPI backend." },
+  { role: "Deployment",        name: "Docker · Offline",    note: "Fully local. Actian DB in Docker, FastAPI + models run natively. No internet after setup." },
 ];
 
 // ── Knowledge Graph Canvas Component ────────────────────────────────────────
@@ -742,7 +740,7 @@ export default function Landing() {
           </span>
           <div className="font-mono text-[9px] tracking-[0.1em] text-muted-foreground/50 text-right leading-relaxed">
             Semantic Matching for Missing Persons and Unidentified Remains<br />
-            Actian VectorAI DB Build Challenge · April 13–18, 2026<br />
+            Actian VectorAI DB Build Challenge · April 13–25, 2026<br />
             Stephen Sookra · Vinh Le
           </div>
         </div>

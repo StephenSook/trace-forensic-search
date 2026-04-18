@@ -2,7 +2,7 @@
 
 **Target length:** 3:30–4:00 · **Format-flexible:** works as a live pitch or a pre-recorded Loom voiceover
 **Speakers:** Stephen (S) · Vinh (V) · or solo if format requires one presenter
-**Demo day:** April 18, 2026
+**Demo day:** April 25, 2026
 
 ---
 

@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 const TraceSidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isSearch = location.pathname === "/";
+  const isSearch = location.pathname === "/search";
 
   return (
     <aside className="w-56 flex flex-col bg-sidebar border-r border-border shrink-0">
@@ -17,7 +17,7 @@ const TraceSidebar = () => {
       {/* Main nav */}
       <nav className="flex-1 flex flex-col gap-0.5 px-3">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/search")}
           className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
             isSearch
               ? "bg-sidebar-accent text-primary"
@@ -32,7 +32,7 @@ const TraceSidebar = () => {
       {/* New Query Button */}
       <div className="px-3 pb-5">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/search")}
           className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-md py-2.5 text-xs font-mono font-semibold tracking-wider uppercase hover:bg-primary/90 transition-colors"
         >
           <Plus size={14} />

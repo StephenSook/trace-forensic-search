@@ -68,7 +68,7 @@ const TraceSearchPanel = ({ form, onFieldChange, onSubmit, isPending, imageFile,
           onChange={(e) => onFieldChange("query", e.target.value)}
           onKeyDown={handleKeyDown}
           className="w-full h-40 bg-input border border-border rounded-md p-3 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-ring font-sans"
-          placeholder="e.g. My brother, 34, eagle tattoo on his right forearm, last seen near a Tennessee highway in 2019..."
+          placeholder="Describe the person in your own words — physical features, scars, tattoos, where they were last seen, clothing…"
         />
       </div>
 

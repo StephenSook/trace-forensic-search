@@ -46,7 +46,7 @@ Source of truth for the DoraHacks submission. Copy-paste targets once Stephen co
 > **How we use Actian VectorAI DB.** Not as a generic vector store — as a first-class primitive.
 >
 > 1. **Four named vector spaces on one collection.** Physical description (768d SapBERT — biomedical model, the only one that treats "eagle tattoo" and "avian motif dermagraphic" as the same concept), circumstances (1024d BGE-M3), clothing (1024d BGE-M3), and tattoo/photo image (512d CLIP ViT-B/32). Each queried independently via `points.search(vector=, using=)`. Embedding the whole case as one vector was deliberately rejected — it dilutes the signal.
-> 2. **Hard pre-filter DSL.** Sex, age-range overlap, state, date window, and case type applied *before* any vector computation using Actian's native `Filter`, `FieldCondition`, `MatchAny`, and `Range`. Recall budget is never spent on wrong-state or wrong-sex candidates.
+> 2. **Hard pre-filter DSL.** Sex, age-range overlap, state, date window, and case type applied *before* any vector computation using Actian's `FilterBuilder` with `Field.eq()`, `Field.any_of()`, and `Field.gte()`/`Field.lte()` range operators. Recall budget is never spent on wrong-state or wrong-sex candidates.
 > 3. **Reciprocal Rank Fusion.** Dense and sparse retrievals fused at k=60. No hyperparameter tuning; consistently beats weighted-sum. Interpretable — we can show a medical examiner exactly why a record ranked where it did.
 > 4. **Deterministic UUID5 point IDs** keyed on case_id so re-ingest is idempotent.
 >
@@ -54,7 +54,7 @@ Source of truth for the DoraHacks submission. Copy-paste targets once Stephen co
 >
 > **Stack.** Actian VectorAI DB 0.1.0b2 (gRPC) · SapBERT + BGE-M3 + CLIP ViT-B/32 · FastAPI + Pydantic v2 · React 18 + Vite + TanStack Query + Tailwind · pytest + Vitest.
 >
-> **Status.** Ingest runs clean against the real DB (60/60 cases). Demo query hits the engineered ground-truth record at confidence 0.79 (HIGH) with clause-level "Why This Matched" breakdowns. CLIP image upload finds the same case cross-modally. Backend has 205 tests, frontend 18. Everything in the repo is reproducible from `docker compose up -d && python ingest.py && uvicorn main:app`.
+> **Status.** Ingest runs clean against the real DB (60/60 cases). Demo query hits the engineered ground-truth record at confidence 0.79 (HIGH) with clause-level "Why This Matched" breakdowns. CLIP image upload finds the same case cross-modally. Backend has 223 tests, frontend 18. Everything in the repo is reproducible from `docker compose up -d && python ingest.py && uvicorn main:app`.
 
 ### Tech stack / technologies (as an array, DoraHacks usually wants comma-separated tags)
 
