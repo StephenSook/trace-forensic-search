@@ -2,40 +2,6 @@ import { Search } from "lucide-react";
 import TraceResultCard from "./TraceResultCard";
 import type { SearchResponse } from "@/lib/api";
 
-const mockResults = [
-  {
-    caseId: "UP-001",
-    title: "Unidentified Male (Found 2020)",
-    confidence: 0.82,
-    threshold: "HIGH CONFIDENCE" as const,
-    stateFound: "Tennessee",
-    genderEst: "Male",
-    ageRange: "30 - 38 Years",
-    discoveryDate: "Jun 02, 2020",
-    matchMappings: [
-      { queryTerm: '"brother, 34"', forensicField: "BIOLOGICAL_RELATION / AGE_EST", forensicValue: "Male, 30–38 yrs", similarity: 0.96 },
-      { queryTerm: '"eagle tattoo"', forensicField: "DISTINGUISHING_MARKS", forensicValue: "Avian motif dermagraphic", similarity: 0.93 },
-      { queryTerm: '"right forearm"', forensicField: "MARK_LOCATION", forensicValue: "Right ventral antebrachium", similarity: 0.98 },
-      { queryTerm: '"Tennessee highway"', forensicField: "RECOVERY_LOCATION", forensicValue: "I-40 corridor, TN", similarity: 0.91 },
-      { queryTerm: '"2019"', forensicField: "DISCOVERY_DATE", forensicValue: "2020-06-02", similarity: 0.85 },
-    ],
-  },
-  {
-    caseId: "UP-002",
-    title: "Unidentified Female (Found 2021)",
-    confidence: 0.71,
-    threshold: "MEDIUM CONFIDENCE" as const,
-    stateFound: "Texas",
-    genderEst: "Female",
-    ageRange: "25 - 32 Years",
-    discoveryDate: "Sep 23, 2021",
-    matchMappings: [
-      { queryTerm: '"tattoo"', forensicField: "DISTINGUISHING_MARKS", forensicValue: "Floral motif dermagraphic", similarity: 0.78 },
-      { queryTerm: '"late 20s"', forensicField: "AGE_EST", forensicValue: "25–32 yrs", similarity: 0.82 },
-    ],
-  },
-];
-
 interface TraceResultsPanelProps {
   data?: SearchResponse;
   isPending: boolean;
@@ -44,9 +10,8 @@ interface TraceResultsPanelProps {
 
 const TraceResultsPanel = ({ data, isPending, error }: TraceResultsPanelProps) => {
   const hasSearched = data !== undefined;
-  const showMocks = !hasSearched && !isPending && !error;
-  const results = hasSearched ? (data.results ?? []) : (showMocks ? mockResults : []);
-  const matchCount = hasSearched ? (data.total_matches ?? results.length) : results.length;
+  const results = hasSearched ? (data.results ?? []) : [];
+  const matchCount = hasSearched ? (data.total_matches ?? results.length) : 0;
 
   return (
     <div className="flex-1 p-6 overflow-y-auto">
@@ -83,13 +48,17 @@ const TraceResultsPanel = ({ data, isPending, error }: TraceResultsPanelProps) =
         </div>
       )}
 
-      {/* Empty state after a real search with no results */}
-      {!isPending && !error && hasSearched && results.length === 0 && (
+      {/* Empty state — before any search or after a search with no results */}
+      {!isPending && !error && results.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Search size={32} className="text-muted-foreground" />
-          <span className="text-trace-label text-xs">NO MATCHES FOUND</span>
+          <span className="text-trace-label text-xs">
+            {hasSearched ? "NO MATCHES FOUND" : "AWAITING QUERY"}
+          </span>
           <p className="text-xs text-muted-foreground max-w-xs text-center">
-            Try broadening your description or removing filters.
+            {hasSearched
+              ? "Try broadening your description or removing filters."
+              : "Describe who you're looking for to begin semantic search."}
           </p>
         </div>
       )}
@@ -115,11 +84,6 @@ const TraceResultsPanel = ({ data, isPending, error }: TraceResultsPanelProps) =
           {data && (
             <span className="text-[0.55rem] text-muted-foreground font-mono tracking-wider">
               QUERY_LATENCY:{data.latency_ms}MS
-            </span>
-          )}
-          {!data && (
-            <span className="text-[0.55rem] text-muted-foreground font-mono tracking-wider">
-              QUERY_COMPLETE:DEMO_PREVIEW
             </span>
           )}
         </div>
