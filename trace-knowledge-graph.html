@@ -5,18 +5,21 @@
 <title>Trace — 3D Knowledge Graph</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #0a0a0f; overflow: hidden; font-family: 'SF Mono', 'Fira Code', monospace; }
+  body { background: #000003; overflow: hidden; font-family: 'SF Mono', 'Fira Code', monospace; }
 
   #header {
     position: absolute; top: 20px; left: 24px; z-index: 10;
     display: flex; flex-direction: column; gap: 4px;
   }
-  #header h1 { color: #58a6ff; font-size: 18px; font-weight: 700; letter-spacing: 2px; }
+  #header h1 {
+    color: #58a6ff; font-size: 18px; font-weight: 700; letter-spacing: 2px;
+    text-shadow: 0 0 20px rgba(88, 166, 255, 0.5);
+  }
   #header p { color: #484f58; font-size: 11px; letter-spacing: 1px; }
 
   #legend {
     position: absolute; bottom: 24px; left: 24px; z-index: 10;
-    background: rgba(13, 17, 23, 0.92); border: 1px solid #21262d;
+    background: rgba(5, 5, 15, 0.92); border: 1px solid #21262d;
     border-radius: 10px; padding: 16px 20px; backdrop-filter: blur(12px);
   }
   .legend-title {
@@ -24,13 +27,13 @@
     letter-spacing: 2px; margin-bottom: 10px; text-transform: uppercase;
   }
   .legend-item { display: flex; align-items: center; gap: 10px; margin: 6px 0; color: #c9d1d9; font-size: 11px; }
-  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 8px currentColor; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
 
   #info-panel {
     position: absolute; bottom: 24px; right: 24px; z-index: 10;
-    background: rgba(13, 17, 23, 0.92); border: 1px solid #21262d;
+    background: rgba(5, 5, 15, 0.92); border: 1px solid #21262d;
     border-radius: 10px; padding: 16px 20px; backdrop-filter: blur(12px);
-    max-width: 340px; display: none; white-space: pre-wrap;
+    max-width: 380px; display: none; white-space: pre-wrap;
   }
   #info-panel .info-title { color: #58a6ff; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
   #info-panel .info-group { color: #484f58; font-size: 10px; letter-spacing: 1.5px; margin-bottom: 8px; text-transform: uppercase; }
@@ -41,43 +44,34 @@
     display: flex; gap: 8px;
   }
   #controls button {
-    background: rgba(13, 17, 23, 0.85); border: 1px solid #21262d;
+    background: rgba(5, 5, 15, 0.85); border: 1px solid #21262d;
     color: #c9d1d9; padding: 7px 14px; border-radius: 8px; cursor: pointer;
     font-family: inherit; font-size: 11px; letter-spacing: 1px;
     backdrop-filter: blur(8px); transition: all 0.2s;
   }
   #controls button:hover { border-color: #58a6ff; color: #58a6ff; }
-
-  .node-label {
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: 12px;
-    padding: 3px 8px;
-    border-radius: 4px;
-    background: rgba(13, 17, 23, 0.9);
-    border: 1px solid #21262d;
-  }
 </style>
 </head>
 <body>
 
 <div id="header">
   <h1>TRACE &mdash; KNOWLEDGE GRAPH</h1>
-  <p>ARCHITECTURE &amp; DATA FLOW &middot; DRAG TO EXPLORE &middot; CLICK NODES FOR DETAILS</p>
+  <p>ARCHITECTURE &amp; DATA FLOW &middot; HOVER TO TRACE CONNECTIONS &middot; CLICK FOR DETAILS</p>
 </div>
 
 <div id="controls">
-  <button onclick="resetView()">RESET VIEW</button>
-  <button onclick="toggleSpin()">AUTO-ROTATE</button>
+  <button id="btn-reset">RESET VIEW</button>
+  <button id="btn-spin">AUTO-ROTATE</button>
 </div>
 
 <div id="legend">
   <div class="legend-title">System Layers</div>
-  <div class="legend-item"><div class="legend-dot" style="color:#ff6b6b; background:#ff6b6b"></div>User Input</div>
-  <div class="legend-item"><div class="legend-dot" style="color:#ffd93d; background:#ffd93d"></div>Embedding Models</div>
-  <div class="legend-item"><div class="legend-dot" style="color:#6bcb77; background:#6bcb77"></div>Vector Spaces (Actian)</div>
-  <div class="legend-item"><div class="legend-dot" style="color:#4d96ff; background:#4d96ff"></div>Pipeline Stages</div>
-  <div class="legend-item"><div class="legend-dot" style="color:#c084fc; background:#c084fc"></div>Output</div>
-  <div class="legend-item"><div class="legend-dot" style="color:#f472b6; background:#f472b6"></div>Data Layer</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b; box-shadow:0 0 12px #ff6b6b"></div>User Input</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ffd93d; box-shadow:0 0 12px #ffd93d"></div>Embedding Models</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#6bcb77; box-shadow:0 0 12px #6bcb77"></div>Vector Spaces (Actian)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4d96ff; box-shadow:0 0 12px #4d96ff"></div>Pipeline Stages</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#c084fc; box-shadow:0 0 12px #c084fc"></div>Output</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f472b6; box-shadow:0 0 12px #f472b6"></div>Data Layer</div>
 </div>
 
 <div id="info-panel">
@@ -88,8 +82,20 @@
 
 <div id="graph"></div>
 
-<script src="https://unpkg.com/3d-force-graph@1.73.4/dist/3d-force-graph.min.js"></script>
-<script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://esm.sh/three@0.181.0",
+    "three/": "https://esm.sh/three@0.181.0/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import ForceGraph3D from 'https://esm.sh/3d-force-graph@1.73.4?external=three';
+import SpriteText from 'https://esm.sh/three-spritetext?external=three';
 
 const COLORS = {
   input:    '#ff6b6b',
@@ -169,41 +175,108 @@ const links = [
   { source: 'bge',      target: 'clause' },
 ];
 
-// ── Graph ───────────────────────────────────────────────────────────
+// ── Pre-compute neighbors for hover highlighting ───────────────────
+nodes.forEach(n => { n.neighbors = []; n.links = []; });
+links.forEach(link => {
+  const a = nodes.find(n => n.id === link.source);
+  const b = nodes.find(n => n.id === link.target);
+  if (a && b) {
+    a.neighbors.push(b);
+    b.neighbors.push(a);
+    a.links.push(link);
+    b.links.push(link);
+  }
+});
+
+const highlightNodes = new Set();
+const highlightLinks = new Set();
+let hoverNode = null;
+
+function getSourceNode(link) {
+  const sid = typeof link.source === 'object' ? link.source.id : link.source;
+  return nodes.find(n => n.id === sid);
+}
+
+// ── Graph ──────────────────────────────────────────────────────────
 const graphEl = document.getElementById('graph');
 let spinning = true;
 
 const Graph = ForceGraph3D()(graphEl)
   .graphData({ nodes, links })
-  .backgroundColor('#0a0a0f')
+  .backgroundColor('#000003')
   .width(window.innerWidth)
   .height(window.innerHeight)
   .showNavInfo(false)
 
-  .nodeColor(n => COLORS[n.group])
+  // Nodes
+  .nodeColor(node => {
+    if (highlightNodes.size === 0) return COLORS[node.group];
+    return highlightNodes.has(node) ? COLORS[node.group] : COLORS[node.group] + '30';
+  })
   .nodeVal(n => n.val)
   .nodeRelSize(5)
-  .nodeOpacity(0.85)
+  .nodeOpacity(0.9)
   .nodeResolution(24)
-  .nodeLabel(n => `<span class="node-label" style="color:${COLORS[n.group]}">${n.name}</span>`)
 
-  .linkColor(link => {
-    const sid = typeof link.source === 'object' ? link.source.id : link.source;
-    const sn = nodes.find(n => n.id === sid);
-    return sn ? COLORS[sn.group] + '44' : '#ffffff22';
+  // SpriteText labels floating above each node
+  .nodeThreeObject(node => {
+    const sprite = new SpriteText(node.name);
+    sprite.color = COLORS[node.group];
+    sprite.backgroundColor = 'rgba(0, 0, 3, 0.65)';
+    sprite.padding = 1.5;
+    sprite.borderRadius = 2;
+    sprite.textHeight = 2.5;
+    sprite.material.depthWrite = false;
+    sprite.position.y = 10;
+    return sprite;
   })
-  .linkWidth(0.8)
-  .linkOpacity(0.25)
-  .linkDirectionalParticles(3)
-  .linkDirectionalParticleWidth(2)
+  .nodeThreeObjectExtend(true)
+
+  // Hover tooltip — first line of description
+  .nodeLabel(n =>
+    `<div style="color:${COLORS[n.group]};background:rgba(0,0,3,0.9);padding:6px 12px;border-radius:6px;font-family:'SF Mono',monospace;font-size:11px;border:1px solid ${COLORS[n.group]}44;max-width:300px;line-height:1.5">${n.desc.split('\n')[0]}</div>`
+  )
+
+  // Links
+  .linkColor(link => {
+    const sn = getSourceNode(link);
+    const base = sn ? COLORS[sn.group] : '#ffffff';
+    if (highlightLinks.size === 0) return base + '44';
+    return highlightLinks.has(link) ? base + 'cc' : base + '12';
+  })
+  .linkWidth(link => highlightLinks.has(link) ? 2.5 : 0.6)
+  .linkOpacity(0.3)
+  .linkDirectionalParticles(link => highlightLinks.has(link) ? 6 : 2)
+  .linkDirectionalParticleWidth(link => highlightLinks.has(link) ? 3 : 1.5)
   .linkDirectionalParticleSpeed(0.005)
   .linkDirectionalParticleColor(link => {
-    const sid = typeof link.source === 'object' ? link.source.id : link.source;
-    const sn = nodes.find(n => n.id === sid);
+    const sn = getSourceNode(link);
     return sn ? COLORS[sn.group] : '#ffffff';
+  })
+  .linkDirectionalArrowLength(5)
+  .linkDirectionalArrowRelPos(1)
+  .linkDirectionalArrowColor(link => {
+    const sn = getSourceNode(link);
+    return sn ? COLORS[sn.group] + '88' : '#ffffff88';
   })
   .linkCurvature(0.15)
 
+  // Hover highlighting
+  .onNodeHover(node => {
+    if ((!node && !highlightNodes.size) || (node && hoverNode === node)) return;
+    highlightNodes.clear();
+    highlightLinks.clear();
+    if (node) {
+      highlightNodes.add(node);
+      node.neighbors.forEach(n => highlightNodes.add(n));
+      node.links.forEach(l => highlightLinks.add(l));
+    }
+    hoverNode = node || null;
+    updateHighlight();
+    graphEl.style.cursor = node ? 'pointer' : 'default';
+  })
+
+  // Click to focus + info panel
   .onNodeClick(node => {
     document.getElementById('info-group').textContent = GROUP_LABELS[node.group] || '';
     document.getElementById('info-title').textContent = node.name;
@@ -217,19 +290,60 @@ const Graph = ForceGraph3D()(graphEl)
       node, 1500
     );
   })
-  .onNodeHover(node => { graphEl.style.cursor = node ? 'pointer' : 'default'; })
-  .onBackgroundClick(() => { document.getElementById('info-panel').style.display = 'none'; });
+  .onBackgroundClick(() => {
+    document.getElementById('info-panel').style.display = 'none';
+    highlightNodes.clear();
+    highlightLinks.clear();
+    hoverNode = null;
+    updateHighlight();
+  });
+
+function updateHighlight() {
+  Graph
+    .nodeColor(Graph.nodeColor())
+    .linkColor(Graph.linkColor())
+    .linkWidth(Graph.linkWidth())
+    .linkDirectionalParticles(Graph.linkDirectionalParticles())
+    .linkDirectionalParticleWidth(Graph.linkDirectionalParticleWidth());
+}
 
 // Force tuning
 Graph.d3Force('charge').strength(-250);
 Graph.d3Force('link').distance(70);
 
-// Initial camera
+// ── Post-processing: Bloom glow ────────────────────────────────────
+try {
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    2.5,
+    0.8,
+    0
+  );
+  Graph.postProcessingComposer().addPass(bloomPass);
+} catch (e) {
+  console.warn('Bloom unavailable:', e);
+}
+
+// ── Scene: Background stars ────────────────────────────────────────
+const starGeometry = new THREE.BufferGeometry();
+const starPositions = new Float32Array(5000 * 3);
+for (let i = 0; i < 5000 * 3; i++) {
+  starPositions[i] = (Math.random() - 0.5) * 10000;
+}
+starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+Graph.scene().add(new THREE.Points(starGeometry, new THREE.PointsMaterial({
+  color: 0xffffff, size: 0.5, transparent: true, opacity: 0.4,
+})));
+
+// ── Scene: Fog for depth ───────────────────────────────────────────
+Graph.scene().fog = new THREE.FogExp2(0x000003, 0.00025);
+
+// ── Camera: Initial fly-in ─────────────────────────────────────────
 setTimeout(() => {
   Graph.cameraPosition({ x: 0, y: 0, z: 400 }, { x: 0, y: 0, z: 0 }, 2000);
 }, 300);
 
-// ── Controls ────────────────────────────────────────────────────────
+// ── Camera: Auto-orbit ─────────────────────────────────────────────
 function spin() {
   if (!spinning) return;
   const t = Date.now() * 0.00008;
@@ -242,16 +356,22 @@ function spin() {
 }
 spin();
 
-function resetView() {
+// ── Controls ───────────────────────────────────────────────────────
+document.getElementById('btn-reset').addEventListener('click', () => {
   Graph.cameraPosition({ x: 0, y: 0, z: 400 }, { x: 0, y: 0, z: 0 }, 1500);
   document.getElementById('info-panel').style.display = 'none';
-}
+  highlightNodes.clear();
+  highlightLinks.clear();
+  hoverNode = null;
+  updateHighlight();
+});
 
-function toggleSpin() {
+document.getElementById('btn-spin').addEventListener('click', () => {
   spinning = !spinning;
   if (spinning) spin();
-}
+});
 
+// ── Responsive ─────────────────────────────────────────────────────
 window.addEventListener('resize', () => {
   Graph.width(window.innerWidth).height(window.innerHeight);
 });

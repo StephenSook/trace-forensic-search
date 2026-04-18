@@ -89,7 +89,9 @@ his right forearm, and was last seen near a highway.
 
 > **V:** The reason this works is Actian VectorAI DB. And we use it as a first-class primitive, not a generic vector store.
 
-*(Optional: show the architecture diagram or the named-vector table from the README)*
+*(Show one of these while talking — pick whichever feels right in the moment):*
+- **3D Knowledge Graph** (recommended): open `https://stephensook.github.io/trace-forensic-search/trace-knowledge-graph.html` — let it auto-rotate, click nodes when judges ask questions
+- **Mermaid diagram**: Vinh's backend architecture flowchart — static but clear, good if screen-sharing is unreliable
 
 > **V:** Every case is stored across **four independent named vector spaces** on a single collection.
 >
