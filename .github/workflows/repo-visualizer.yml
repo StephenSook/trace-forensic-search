@@ -1,0 +1,32 @@
+name: Repo Visualizer
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  visualize:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: githubocto/repo-visualizer@0.9.1
+        with:
+          output_file: diagram.svg
+          excluded_paths: >-
+            node_modules,
+            .venv,
+            __pycache__,
+            dist,
+            .git,
+            vendor,
+            backend/vendor,
+            .github
+          root_path: ""
+          max_depth: 4
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update repo visualization diagram"
+          file_pattern: diagram.svg
