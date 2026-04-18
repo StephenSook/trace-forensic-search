@@ -179,3 +179,5 @@ frontend/Background Information/
 CLAUDE.md
 AGENTS.md
 graphify-out/
+.graphify_detect.json
+graphify-trace-brief/

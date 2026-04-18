@@ -89,17 +89,23 @@ his right forearm, and was last seen near a highway.
 
 > **V:** The reason this works is Actian VectorAI DB. And we use it as a first-class primitive, not a generic vector store.
 
+*(ELI10: it's our special notebook that understands meaning, not just words)*
+
 *(Show one of these while talking — pick whichever feels right in the moment):*
-- **3D Knowledge Graph** (recommended): open `https://stephensook.github.io/trace-forensic-search/trace-knowledge-graph.html` — let it auto-rotate, click nodes when judges ask questions
+- **3D Knowledge Graph** (recommended): open `trace-knowledge-graph.html` locally in browser — let it auto-rotate, have it as a background tab you can switch to if judges ask architecture questions
 - **Mermaid diagram**: Vinh's backend architecture flowchart — static but clear, good if screen-sharing is unreliable
+- **Architecture diagram or named-vector table**: from the README, good fallback if screen-sharing is unreliable
 
 > **V:** Every case is stored across **four independent named vector spaces** on a single collection.
 >
-> - **Physical description** goes through SapBERT — a biomedical language model — because the lay-to-forensic terminology gap is most acute there.
-> - **Circumstances** and **clothing** go through BGE-M3.
-> - **Tattoo and identifying photos** go through CLIP, for cross-modal image search.
+> - **Physical description** → **SapBERT** by Cambridge, trained on PubMed — so when a family says "eagle tattoo on his forearm," it matches a record that says "avian tattoo, right antebrachium." Same meaning, completely different words.
+> - **Circumstances** → **BGE-M3** by BAAI — handles long narrative text and multiple languages, because not every family writes in English or writes the same way.
+> - **Clothing** → **BGE-M3** by BAAI — same model, kept separate so a strong clothing match doesn't get averaged away by a weak location match.
+> - **Identifying photos** → **CLIP** by OpenAI — the only model that puts images and text in the same space, so a description can match against an actual photo.
 >
 > We deliberately did not embed the whole case as one vector. That dilutes the signal.
+
+*(ELI10: instead of describing a person in one paragraph, we put "what they looked like", "where they disappeared", "what they wore", and "their photo" into four separate folders — so "eagle tattoo on right forearm" scores strongly in the physical folder without being dragged down by a weak clothing or location match)*
 
 **Pause.**
 
@@ -107,10 +113,14 @@ his right forearm, and was last seen near a highway.
 
 *(Count on fingers or tick through on-screen):*
 
-> 1. **Hard filter first** — state, sex, age range, date window — using Actian's native filter DSL. We never spend recall budget on wrong-state or wrong-sex candidates.
+> 1. **Hard filter first** — state, age range, date window — using Actian's native filter DSL. We never spend recall budget on wrong-state or out-of-range candidates.
+> *(ELI10: if a family says "he was in his 30s," we immediately throw out every case where the medical examiner estimated age 60+ — no point searching those)*
 > 2. **Multi-vector retrieval** — each named space searched independently.
+> *(ELI10: we search all four folders separately — the tattoo folder, the clothing folder, the circumstances folder, the photo folder — and collect the best matches from each)*
 > 3. **Hybrid fusion** — Reciprocal Rank Fusion with k equals sixty. Beats weighted-sum every time with no tuning.
+> *(ELI10: whoever kept appearing near the top across multiple folders wins — a case that matches on both the tattoo and the last location ranks higher than one that only matches on clothing)*
 > 4. **Ranked output** — with the per-dimension score breakdown and the terminology panel you just saw.
+> *(ELI10: we show the detective exactly which clue matched — "eagle tattoo" linked to this case's distinguishing marks, with a 91% similarity score)*
 
 ---
 
@@ -197,6 +207,12 @@ The architecture is unchanged. Actian VectorAI DB handles the index; the hard pr
 
 **"Why synthetic data?"**
 Two reasons. Ethics: we won't ingest real unsolved cases into a demo app — that would imply the app is operating on those cases. Reproducibility: synthetic data gives us a known ground-truth pair so we can demonstrate the "Why This Matched" panel with a pre-verified answer.
+
+**"Why named vectors instead of one collection?"**
+A missing person has four completely different types of information — physical description, circumstances, clothing, and photos. Each needs a different model to understand it. If we embedded everything into one vector, a strong clothing match would average out against a weak location match and dilute the signal. Named vectors let us search all four simultaneously in one query and score each dimension independently.
+
+**"Why run locally instead of using a cloud API?"**
+Forensic data contains restricted PII — DNA profiles, dental records, unredacted case details. Sending that to a cloud API is a regulatory non-starter for the agencies we built this for. Local-first isn't a tradeoff, it's a requirement for this domain.
 
 **"Can a family actually use this?"**
 Not today — today this is a proof of the semantic bridge. A family-facing product would need moderation, advocate review, and NamUs integration. What we've built is the core retrieval technology. The user in front of this should be an investigator, a medical examiner's office, or a trained advocate.
