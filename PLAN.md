@@ -2,8 +2,8 @@
 
 > Living working doc for **Stephen Sookra** (frontend + pitch) and **Vinh Le** (backend + AI systems). Updated on every completed task and pushed to `main`. Authoritative over the PDF when they disagree.
 
-**Hackathon:** Actian VectorAI DB Build Challenge — Apr 13–18, 2026
-**Today:** Apr 16, 2026 (Day 4 of 6)
+**Hackathon:** Actian VectorAI DB Build Challenge — Apr 13–25, 2026 (submission deadline Apr 25)
+**Today:** Apr 18, 2026 (Day 6 — demo recording day)
 **Repo:** https://github.com/StephenSook/trace-forensic-search
 **Actian reference:** https://github.com/hackmamba-io/actian-vectorAI-db-beta (cloned locally at `../actian-vectorAI-db-beta` for example scripts)
 
@@ -38,8 +38,8 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 2.6 | Filter DSL builder | `backend/filters.py` | **Vinh** | ✅ | Complete 2026-04-15. `build_filter(SearchFilters) -> Filter \| None` + `_iso_to_epoch` helper. 31 unit tests green — introspects `Filter.must[*].field` to verify clause keys, match values, range bounds, age-overlap semantics, epoch correctness, and ValueError on bad dates. |
 | 2.7 | Ingest pipeline | `backend/ingest.py` | **Stephen** | ✅ | Complete 2026-04-15. Injectable `Embedders` DI, UUID5 idempotent IDs, 9 live tests green. Real-vector ingest run: 60/60 cases with SapBERT+BGE-M3+CLIP embeddings in ~73s on MPS. |
 | 2.8 | Hybrid search engine | `backend/search.py` | **Vinh** | ✅ | Implemented 2026-04-16. `run_search(req, client) -> SearchResponse`. 4-vector fan-out (SapBERT/CLIP/BGE×2) + RRF fusion + max-cosine confidence + "Why This Matched" with fine-grained field labels. Chunk embeddings shared across results. 56 unit tests green (helpers + stubbed-client integration). |
-| 2.9 | FastAPI server | `backend/main.py` | **Vinh** | ⬜ | Endpoints: `POST /search`, `GET /case/{id}`, `GET /health`. CORS for :5173. |
-| 2.10 | Backend tests | `backend/tests/*.py` | **Stephen** | ✅ | Updated 2026-04-16. 146 tests total: test_schemas (47), test_config (12), test_synthetic_data (16), test_ingest (9), test_filters (31), test_search (56). All green. |
+| 2.9 | FastAPI server | `backend/main.py` | **Vinh** | ✅ | Hardened lifespan, /health logging, /case 404 handling. CORS for :5173 + :8080. |
+| 2.10 | Backend tests | `backend/tests/*.py` | **Stephen** | ✅ | Updated 2026-04-18. 205 tests total: test_schemas (47), test_config (12), test_synthetic_data (16), test_ingest (9), test_filters (31), test_search (56), test_main (34). All green. |
 | 3.1 | API client | `frontend/src/lib/api.ts` | Stephen/Claude | ✅ | Typed fetch wrapper + `ApiError` class. Mirrors `schemas.py` exactly (camelCase results, snake_case envelope). 6 vitest specs green. |
 | 3.2 | Search state + form wiring | `frontend/src/pages/Index.tsx`, `TraceSearchPanel.tsx` | Stephen/Claude | ✅ | Controlled inputs, lifted state in Index, `useMutation` fires `searchCases()`. 50-state dropdown, number age inputs, native date pickers, loading spinner, sonner error toasts. Mock fallback until backend ships. |
 | 3.3 | Live results rendering | `frontend/src/components/TraceResultsPanel.tsx`, `TraceResultCard.tsx` | Stephen/Claude | ✅ | ResultsPanel accepts `data/isPending/error` props. Shows mock preview before first search, live results after, loading spinner during, empty state on 0 results. Latency counter in stream footer. |
@@ -47,9 +47,9 @@ Legend: ✅ done &nbsp; 🟡 in progress &nbsp; ⬜ not started &nbsp; ⛔ block
 | 4.1 | Synthetic cases | `data/synthetic/cases.json` + `generate_cases.py` | Claude | ✅ | 60 cases, 6 ground-truth pairs (MP/UP-001..006), 36 states, 2015-2024, demo pair wording verbatim, schema-validated 2026-04-15. |
 | 4.2 | Ingest run against real DB | runtime | **Stephen** | ✅ | Completed 2026-04-15. 60 points in `cases` collection with real embeddings. Demo query scores: circumstances 0.82 (MP-001), physical_text 0.65 (UP-001). Both vector spaces return semantically correct results. |
 | 5.1 | Demo script / talk track | `DEMO_SCRIPT.md` | Stephen | ✅ | Completed 2026-04-15. 3:30–4:00 two-speaker script with Stephen/Vinh split, backup narrative, format contingencies, scoring-rubric callouts, and Q&A appendix. |
-| 5.2 | Loom demo video (3–5 min) | external | Stephen | ⬜ | Day 5 deliverable. |
-| 5.3 | DoraHacks submission write-up | external | Stephen | ⬜ | Day 5 deliverable. |
-| 5.4 | README polish for judges | `README.md` | Stephen | ⬜ | Setup instructions + demo query. |
+| 5.2 | Demo video (3–5 min) | external | Stephen + Vinh | ⬜ | Recording scheduled Apr 18 at 6 PM. Script ready in DEMO_SCRIPT.md. |
+| 5.3 | DoraHacks submission write-up | `SUBMISSION.md` | Stephen | ✅ | Written. TODOs remaining: demo video URL + thumbnail (after recording). |
+| 5.4 | README polish for judges | `README.md` | Stephen | ✅ | Professional README with architecture, demo moment, setup instructions. |
 
 ---
 
@@ -183,7 +183,7 @@ cd backend && python ingest.py
 
 See status dashboard rows 1.1–1.6.
 
-### Phase 2 — Backend core 🟡
+### Phase 2 — Backend core ✅
 
 Build order matters — later files import from earlier ones. **Claude pauses after Task 2.1 per Stephen's instruction ("let me know when you're done with requirements before you move to the next thing").**
 
@@ -667,7 +667,7 @@ Covered incrementally in 2.3–2.9. One final integration test that starts from 
 
 **Commit:** `test(backend): add integration test for the demo query`
 
-### Phase 3 — Frontend wire-up ⬜
+### Phase 3 — Frontend wire-up ✅
 
 **Principle:** keep the existing visual design exactly as-is. Swap mock data for real data only — no restyling.
 
@@ -727,7 +727,7 @@ Replace `mockResults` array in `TraceResultsPanel.tsx` with `data?.results`. Map
 
 **Commit:** `feat(frontend): add loading skeleton, error toasts, empty state`
 
-### Phase 4 — Synthetic data ⬜
+### Phase 4 — Synthetic data ✅
 
 #### Task 4.1 — `data/synthetic/cases.json`
 
@@ -747,7 +747,7 @@ Start DB → run `python -m backend.ingest` → run `python -m backend.tests.tes
 
 **Commit:** `test: verify demo query end-to-end against ingested synthetic data`
 
-### Phase 5 — Demo polish + submission ⬜
+### Phase 5 — Demo polish + submission 🟡
 
 Ownership: Stephen. Covered by rows 5.1–5.4 in the dashboard.
 
@@ -792,4 +792,4 @@ Ownership: Stephen. Covered by rows 5.1–5.4 in the dashboard.
 
 ---
 
-_Last updated: 2026-04-15 by Claude (Opus 4.6)._
+_Last updated: 2026-04-18 by Claude (Opus 4.6) — pre-demo audit._

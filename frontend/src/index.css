@@ -40,9 +40,9 @@
     --trace-surface: 216 25% 12%;
     --trace-surface-elevated: 216 22% 15%;
     --trace-accent-glow: 211 90% 60%;
-    --trace-confidence-high: 0 70% 50%;
+    --trace-confidence-high: 140 50% 45%;
     --trace-confidence-med: 30 70% 50%;
-    --trace-confidence-low: 140 50% 45%;
+    --trace-confidence-low: 0 70% 50%;
     --trace-label: 215 15% 45%;
     --trace-header: 215 15% 55%;
 
