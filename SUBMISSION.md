@@ -7,7 +7,7 @@ Source of truth for the DoraHacks submission. Copy-paste targets once Stephen co
 ## Canonical Hackathon Facts
 
 - **URL:** https://dorahacks.io/hackathon/2097
-- **Deadline:** April 18, 2026 — **18:00 UTC** (timeline block is authoritative; banner shows "12:00" in an ambiguous timezone — verify from logged-in view)
+- **Deadline:** April 25, 2026 — **18:00 UTC** (timeline block is authoritative; banner shows "12:00" in an ambiguous timezone — verify from logged-in view)
 - **Hard requirements:** GitHub/GitLab/Bitbucket link · Demo video
 - **Team cap:** 4
 - **Rubric:** Actian usage 30% · Real-world impact 25% · Technical execution 25% · Demo & presentation 20% · Bonus for local/ARM/offline
@@ -41,7 +41,7 @@ Source of truth for the DoraHacks submission. Copy-paste targets once Stephen co
 
 > **The problem.** 600,000 people are reported missing in the United States every year. 40,000 sets of unidentified human remains sit in the national system. Both live in NamUs — the federal Missing and Unidentified Persons System — but NamUs runs on keyword search. A grieving family and a medical examiner describing the same person use completely different vocabularies. A mother searches for an *"eagle tattoo on his right forearm"*; the record reads *"avian motif dermagraphic, right ventral antebrachium."* Same person. Zero shared words. The match never happens.
 >
-> **What Trace does.** A user types a missing-person description in plain English. Trace semantically matches it against unidentified-remains records and returns ranked candidates with a per-dimension score breakdown and a side-by-side translation panel showing exactly *why* each record matched. Every technical decision traces back to making one demo query work: *"My brother went missing in 2019 in Tennessee. He was 34, about 6 feet tall, had a distinctive tattoo of an eagle on his right forearm, and was last seen near a highway."* Top result: confidence 0.81 (HIGH), warm-path under a second.
+> **What Trace does.** A user types a missing-person description in plain English. Trace semantically matches it against unidentified-remains records and returns ranked candidates with a per-dimension score breakdown and a side-by-side translation panel showing exactly *why* each record matched. Every technical decision traces back to making one demo query work: *"My brother went missing in 2019 in Tennessee. He was 34, about 6 feet tall, had a distinctive tattoo of an eagle on his right forearm, and was last seen near a highway."* Top result: confidence 0.79 (HIGH), warm-path under a second. Upload a photo of an eagle tattoo and the same case surfaces again via CLIP cross-modal matching — text bridges the vocabulary gap, images bridge the modality gap.
 >
 > **How we use Actian VectorAI DB.** Not as a generic vector store — as a first-class primitive.
 >
@@ -54,7 +54,7 @@ Source of truth for the DoraHacks submission. Copy-paste targets once Stephen co
 >
 > **Stack.** Actian VectorAI DB 0.1.0b2 (gRPC) · SapBERT + BGE-M3 + CLIP ViT-B/32 · FastAPI + Pydantic v2 · React 18 + Vite + TanStack Query + Tailwind · pytest + Vitest.
 >
-> **Status.** Ingest runs clean against the real DB (60/60 cases, 73s on MPS). Demo query hits the engineered ground-truth record at 0.82 on circumstances and 0.65 on physical text. Backend has 114 tests, frontend 18. Everything in the repo is reproducible from `docker compose up -d && python ingest.py && uvicorn main:app`.
+> **Status.** Ingest runs clean against the real DB (60/60 cases). Demo query hits the engineered ground-truth record at confidence 0.79 (HIGH) with clause-level "Why This Matched" breakdowns. CLIP image upload finds the same case cross-modally. Backend has 205 tests, frontend 18. Everything in the repo is reproducible from `docker compose up -d && python ingest.py && uvicorn main:app`.
 
 ### Tech stack / technologies (as an array, DoraHacks usually wants comma-separated tags)
 
@@ -129,7 +129,7 @@ Screenshots so far cover **Profile only**. Other 4 pages pending Stephen's next 
 | Form field | Required? | Use this value |
 |---|---|---|
 | BUIDL (project) name | ✅ | `Trace` |
-| BUIDL logo | ✅ | **TODO** — 480×480 JPEG/PNG, <2MB (see Logo Plan below) |
+| BUIDL logo | ✅ | `Trace Logo/trace-logo-square.png` (480×480 PNG) |
 | Vision ("Describe the problem") | ✅ | See "Vision textbox" below |
 | Category (one pill) | ✅ | **AI/Robotics** (closest fit; not "Other") |
 | Is this BUIDL an AI Agent? | ✅ | **No** (Trace is retrieval, not agentic) |

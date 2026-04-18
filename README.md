@@ -11,11 +11,9 @@ A language bridge between grieving families and forensic records — built on Ac
 
 NamUs — the National Missing and Unidentified Persons System — is the federal database where both missing persons reports and unidentified remains cases live. But it runs on keyword search. And a grieving family and a medical examiner describing the same person use completely different languages.
 
-A mother searching for her son describes an eagle tattoo on his right forearm. The medical examiner's record reads "avian motif dermagraphic, right ventral antebrachium." A family says he had a birthmark on his left shoulder. The record reads "pigmented lesion, left dorsal region." These two descriptions of the same person share almost no vocabulary — so they never meet.
+A mother searching for her son describes an *eagle tattoo on his right forearm*. The medical examiner's record reads *"avian motif dermagraphic, right ventral antebrachium."* Same person. Zero shared vocabulary. Keyword search never makes the connection.
 
-Not because the match doesn't exist. Because there is no semantic bridge.
-
-Trace is that bridge.
+Trace is the semantic bridge.
 
 ---
 
@@ -25,22 +23,23 @@ A user types, in plain English:
 
 > *"My brother went missing in 2019 in Tennessee. He was 34, about 6 feet tall, had a distinctive tattoo of an eagle on his right forearm, and was last seen near a highway."*
 
-Trace returns the top hit:
+With filters set to **Unidentified Remains** and **Tennessee**, Trace returns:
 
-> **Case UP-001 — Unidentified Male, recovered 2020** · confidence **HIGH (0.81)**
-> *"Male, mid-30s, avian motif dermagraphic, right ventral antebrachium, recovered near I-40 corridor. Estimated stature 178cm."*
+> **Case UP-001 — Unidentified Male, recovered 2020** · confidence **HIGH (0.79)**
 
-Every "Why This Matched" row shares **zero characters** with the query:
+Every "Why This Matched" row shares **zero words** with the query:
 
 | Family said | Record said | Bridge |
 |---|---|---|
 | eagle tattoo | avian motif dermagraphic | SapBERT (biomedical) |
 | right forearm | right ventral antebrachium | SapBERT (anatomical) |
-| near a highway | I-40 corridor | BGE-M3 (circumstance) |
-| about 6 feet | stature 178cm | semantic + numeric |
-| 2019, Tennessee | 2020, TN | hard filter + temporal window |
+| near a highway | beside the highway, I-40 | BGE-M3 (circumstance) |
+| He was 34 | mid-30s | SapBERT (age estimation) |
+| 2019, Tennessee | 2020, TN | hard filter + temporal proximity |
 
 Under keyword search, this match never happens. Under Trace, it's the top hit.
+
+**Then** — upload a photo of an eagle tattoo. Trace encodes it with CLIP and searches across the image vector space. Same case, confidence 0.51 (MEDIUM). Text bridged the vocabulary gap. Images bridge the modality gap.
 
 ---
 
@@ -58,9 +57,9 @@ Each case record lives across **four independent named vector spaces** in Actian
 A query runs through a four-stage pipeline:
 
 1. **Hard filter** — sex, age-range overlap, state, date window, case_type — applied *before* any vector math, using Actian's native filter DSL.
-2. **Multi-vector retrieval** — query embedded by BGE-M3 (dense + sparse) and SapBERT; each named space searched independently. CLIP runs if a photo is uploaded.
+2. **Multi-vector retrieval** — query embedded by SapBERT, BGE-M3, and CLIP; each named space searched independently. If a photo is uploaded, CLIP encodes it for cross-modal image→text matching.
 3. **Hybrid fusion** — results merged via Reciprocal Rank Fusion (k=60). No hyperparameter tuning; consistently beats linear weighting.
-4. **Ranked output** — top candidates with per-dimension score breakdown, a side-by-side terminology translation, and a direct NamUs case link.
+4. **Ranked output** — top candidates with clause-level confidence scoring, a side-by-side "Why This Matched" terminology translation, and full case detail view.
 
 ---
 
@@ -88,23 +87,23 @@ Forensic databases contain restricted personally identifiable information — DN
 mkdir -p backend/vendor
 cp /path/to/actian-vectorAI-db-beta/actian_vectorai-0.1.0b2-py3-none-any.whl backend/vendor/
 
-# 2. Backend — Python 3.12 venv + deps
+# 2. Start Actian VectorAI DB
+docker compose up -d --wait
+
+# 3. Backend — Python 3.12 venv + deps
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install --upgrade pip && pip install -r requirements.txt
 
-# 3. Start Actian VectorAI DB (from repo root)
-cd .. && docker compose up -d --wait
-
 # 4. Ingest synthetic data, then start the API
-cd backend && python ingest.py
+python ingest.py
 uvicorn main:app --reload --port 8000
 
 # 5. In a new terminal — frontend
 cd frontend && npm install && npm run dev
 ```
 
-Open **http://localhost:8080**. Full setup and architecture notes live in [`PLAN.md`](./PLAN.md).
+Open **http://localhost:5173**. Full setup and architecture notes live in [`PLAN.md`](./PLAN.md).
 
 ---
 
@@ -114,13 +113,13 @@ Open **http://localhost:8080**. Full setup and architecture notes live in [`PLAN
 - **Embeddings** — SapBERT, BGE-M3, CLIP ViT-B/32 (all local, MPS/CUDA/CPU auto-detected)
 - **Backend** — FastAPI + Pydantic v2, Python 3.12
 - **Frontend** — React 18 + Vite + TanStack Query + Tailwind
-- **Tests** — pytest (backend), Vitest (frontend)
+- **Tests** — pytest (205 backend tests), Vitest (frontend)
 
 ---
 
 ## Built For
 
-Actian VectorAI DB Build Challenge · April 13–18, 2026
+Actian VectorAI DB Build Challenge · April 13–25, 2026
 
 ## Team
 

@@ -65,11 +65,27 @@ his right forearm, and was last seen near a highway.
 
 > **S:** Full case file. Physical description: *"avian motif dermagraphic depicting raptor on right ventral antebrachium"* — that's "eagle tattoo on his right forearm" in medical-examiner speak. Recovery: *"near highway I-40 east of Nashville."* Every field is written in forensic vocabulary. A keyword search for "eagle tattoo" would never find this record. Trace did.
 
-*(Brief pause on the case detail page.)*
+*(Brief pause on the case detail page. Then navigate back to results.)*
 
 ---
 
-## 1:40–2:40 · How It Works (Vinh)
+## 1:40–2:10 · "One More Thing" — Image Upload (Stephen)
+
+> **S:** One more thing. Trace doesn't just search with text. What if the family has a photo?
+
+*(Click the CLIP IMAGE SEARCH upload button. Select `eagle.png` from Desktop. Leave the query text empty or as-is. Hit EXECUTE SEMANTIC QUERY.)*
+
+> **S:** This is a photo of an eagle tattoo — the kind of reference photo a family might bring to an investigator. Trace encodes it with CLIP and searches across the image vector space.
+
+*(Results load — UP-001 appears, confidence ~0.51 MEDIUM)*
+
+> **S:** Same case. UP-001. The confidence is lower — 0.51, medium — because cross-modal matching is inherently harder. We're comparing a photograph to a text description that was never meant to be matched to an image. But it still found the right case. Text bridged the vocabulary gap. Now images bridge the modality gap.
+
+*(Brief pause, then move on.)*
+
+---
+
+## 2:10–3:00 · How It Works (Vinh)
 
 > **V:** The reason this works is Actian VectorAI DB. And we use it as a first-class primitive, not a generic vector store.
 
@@ -96,7 +112,7 @@ his right forearm, and was last seen near a highway.
 
 ---
 
-## 2:40–3:15 · Why Local-First (Stephen)
+## 3:00–3:30 · Why Local-First (Stephen)
 
 > **S:** One more thing. Trace runs entirely on-device.
 
@@ -108,7 +124,7 @@ his right forearm, and was last seen near a highway.
 
 ---
 
-## 3:15–3:45 · Close (Stephen + Vinh)
+## 3:30–4:00 · Close (Stephen + Vinh)
 
 > **S:** We built Trace for the Actian VectorAI DB Build Challenge. It bridges the vocabulary gap between a family's grief and a medical examiner's record — and it does it without ever touching the cloud.
 
@@ -158,9 +174,9 @@ Each of these has at least one moment in the script:
 
 | Rubric dimension | Where it lands |
 |---|---|
-| **Use of Actian VectorAI DB (30%)** | "four named vector spaces", "native filter DSL", "points.search with `using`" |
-| **Innovation** | "zero shared vocabulary", SapBERT for lay-to-forensic gap, RRF fusion, case_type filter isolates the semantic bridge |
-| **Technical execution** | four-stage pipeline, HIGH confidence 0.79 on UP-001 (cross-vocabulary, zero shared words), sub-second latency |
+| **Use of Actian VectorAI DB (30%)** | "four named vector spaces", "native filter DSL", "points.search with `using`", CLIP image vector space for cross-modal search |
+| **Innovation** | "zero shared vocabulary", SapBERT for lay-to-forensic gap, RRF fusion, case_type filter isolates the semantic bridge, cross-modal image→text matching |
+| **Technical execution** | four-stage pipeline, HIGH confidence 0.79 on UP-001 (cross-vocabulary, zero shared words), CLIP image upload finds same case at 0.51, sub-second latency |
 | **Impact** | 600K / 40K stat, "avian motif dermagraphic" ↔ "eagle tattoo" live on screen, local-first ethics |
 | **Presentation quality** | translation panel showing forensic↔family vocabulary, clean case detail, rehearsed timing |
 
