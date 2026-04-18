@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Trace — 3D Knowledge Graph</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0f; overflow: hidden; font-family: 'SF Mono', 'Fira Code', monospace; }
+
+  #header {
+    position: absolute; top: 20px; left: 24px; z-index: 10;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  #header h1 { color: #58a6ff; font-size: 18px; font-weight: 700; letter-spacing: 2px; }
+  #header p { color: #484f58; font-size: 11px; letter-spacing: 1px; }
+
+  #legend {
+    position: absolute; bottom: 24px; left: 24px; z-index: 10;
+    background: rgba(13, 17, 23, 0.92); border: 1px solid #21262d;
+    border-radius: 10px; padding: 16px 20px; backdrop-filter: blur(12px);
+  }
+  .legend-title {
+    color: #8b949e; font-size: 9px; font-weight: 700;
+    letter-spacing: 2px; margin-bottom: 10px; text-transform: uppercase;
+  }
+  .legend-item { display: flex; align-items: center; gap: 10px; margin: 6px 0; color: #c9d1d9; font-size: 11px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 8px currentColor; }
+
+  #info-panel {
+    position: absolute; bottom: 24px; right: 24px; z-index: 10;
+    background: rgba(13, 17, 23, 0.92); border: 1px solid #21262d;
+    border-radius: 10px; padding: 16px 20px; backdrop-filter: blur(12px);
+    max-width: 340px; display: none; white-space: pre-wrap;
+  }
+  #info-panel .info-title { color: #58a6ff; font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  #info-panel .info-group { color: #484f58; font-size: 10px; letter-spacing: 1.5px; margin-bottom: 8px; text-transform: uppercase; }
+  #info-panel .info-desc { color: #c9d1d9; font-size: 11px; line-height: 1.6; }
+
+  #controls {
+    position: absolute; top: 20px; right: 24px; z-index: 10;
+    display: flex; gap: 8px;
+  }
+  #controls button {
+    background: rgba(13, 17, 23, 0.85); border: 1px solid #21262d;
+    color: #c9d1d9; padding: 7px 14px; border-radius: 8px; cursor: pointer;
+    font-family: inherit; font-size: 11px; letter-spacing: 1px;
+    backdrop-filter: blur(8px); transition: all 0.2s;
+  }
+  #controls button:hover { border-color: #58a6ff; color: #58a6ff; }
+
+  .node-label {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(13, 17, 23, 0.9);
+    border: 1px solid #21262d;
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>TRACE &mdash; KNOWLEDGE GRAPH</h1>
+  <p>ARCHITECTURE &amp; DATA FLOW &middot; DRAG TO EXPLORE &middot; CLICK NODES FOR DETAILS</p>
+</div>
+
+<div id="controls">
+  <button onclick="resetView()">RESET VIEW</button>
+  <button onclick="toggleSpin()">AUTO-ROTATE</button>
+</div>
+
+<div id="legend">
+  <div class="legend-title">System Layers</div>
+  <div class="legend-item"><div class="legend-dot" style="color:#ff6b6b; background:#ff6b6b"></div>User Input</div>
+  <div class="legend-item"><div class="legend-dot" style="color:#ffd93d; background:#ffd93d"></div>Embedding Models</div>
+  <div class="legend-item"><div class="legend-dot" style="color:#6bcb77; background:#6bcb77"></div>Vector Spaces (Actian)</div>
+  <div class="legend-item"><div class="legend-dot" style="color:#4d96ff; background:#4d96ff"></div>Pipeline Stages</div>
+  <div class="legend-item"><div class="legend-dot" style="color:#c084fc; background:#c084fc"></div>Output</div>
+  <div class="legend-item"><div class="legend-dot" style="color:#f472b6; background:#f472b6"></div>Data Layer</div>
+</div>
+
+<div id="info-panel">
+  <div class="info-group" id="info-group"></div>
+  <div class="info-title" id="info-title"></div>
+  <div class="info-desc" id="info-desc"></div>
+</div>
+
+<div id="graph"></div>
+
+<script src="https://unpkg.com/3d-force-graph@1.73.4/dist/3d-force-graph.min.js"></script>
+<script>
+
+const COLORS = {
+  input:    '#ff6b6b',
+  model:    '#ffd93d',
+  vector:   '#6bcb77',
+  pipeline: '#4d96ff',
+  output:   '#c084fc',
+  data:     '#f472b6',
+};
+
+const GROUP_LABELS = {
+  input: 'USER INPUT', model: 'EMBEDDING MODEL', vector: 'ACTIAN VECTOR SPACE',
+  pipeline: 'PIPELINE STAGE', output: 'OUTPUT', data: 'DATA LAYER',
+};
+
+const nodes = [
+  { id: 'query',       name: 'Family Query',        group: 'input',    val: 18, desc: 'Natural language description from a family member.\n"My brother had an eagle tattoo on his right forearm..."' },
+  { id: 'filters',     name: 'Hard Filters',         group: 'input',    val: 12, desc: 'Sex, age range, state, date window, case type.\nApplied before any vector computation via Actian\'s native Filter DSL.' },
+  { id: 'image',       name: 'Photo Upload',         group: 'input',    val: 12, desc: 'Optional tattoo or identifying photo.\nEncoded by CLIP for cross-modal image-to-text matching.' },
+
+  { id: 'sapbert',     name: 'SapBERT (768d)',       group: 'model',    val: 16, desc: 'Biomedical language model.\nThe only model that knows "eagle tattoo" and "avian motif dermagraphic" are the same concept.\nTrained on UMLS medical terminology.' },
+  { id: 'bge',         name: 'BGE-M3 (1024d)',       group: 'model',    val: 16, desc: 'General-purpose dense retrieval model.\nEncodes circumstances and clothing descriptions.\nDense + sparse output on a single forward pass.' },
+  { id: 'clip',        name: 'CLIP ViT-B/32 (512d)', group: 'model',    val: 16, desc: 'Cross-modal vision-language model.\nBridges photos to text descriptions across modalities.\nImage and text share the same 512-dim embedding space.' },
+
+  { id: 'v_physical',  name: 'physical_text',        group: 'vector',   val: 14, desc: 'Named vector space (768d) in Actian VectorAI DB.\nScars, marks, tattoos, dental records.\nEncoded by SapBERT for biomedical vocabulary.' },
+  { id: 'v_circum',    name: 'circumstances',        group: 'vector',   val: 14, desc: 'Named vector space (1024d) in Actian VectorAI DB.\nNarrative of disappearance or recovery.\nLocation, date, scene description.' },
+  { id: 'v_clothing',  name: 'clothing',             group: 'vector',   val: 14, desc: 'Named vector space (1024d) in Actian VectorAI DB.\nApparel, jewelry, personal effects.\nEncoded by BGE-M3.' },
+  { id: 'v_image',     name: 'physical_image',       group: 'vector',   val: 14, desc: 'Named vector space (512d) in Actian VectorAI DB.\nCLIP embeddings for cross-modal search.\nText fallback when no photo exists.' },
+
+  { id: 'prefilter',   name: 'Pre-Filter',           group: 'pipeline', val: 13, desc: 'Stage 1: Hard metadata filtering.\nActian FieldCondition + MatchAny + Range.\nApplied before vector math.\nNever wastes recall budget on wrong-state candidates.' },
+  { id: 'retrieval',   name: 'Multi-Vector Search',  group: 'pipeline', val: 13, desc: 'Stage 2: Four independent searches.\nEach named vector space queried separately.\npoints.search(vector=, using=) per space.' },
+  { id: 'rrf',         name: 'RRF Fusion (k=60)',    group: 'pipeline', val: 20, desc: 'Stage 3: Reciprocal Rank Fusion.\nMerges four ranked lists with k=60.\nNo hyperparameter tuning needed.\nConsistently beats weighted-sum approaches.' },
+  { id: 'clause',      name: 'Clause Matching',      group: 'pipeline', val: 13, desc: 'Stage 4: Clause-level similarity.\nSplits source texts into clauses.\nPairwise cosine similarity per clause.\nEliminates embedding dilution from long texts.' },
+
+  { id: 'results',     name: 'Ranked Results',       group: 'output',   val: 16, desc: 'Final output: ranked case matches.\nConfidence = max(vector cosine, clause cosine).\nHIGH >= 0.70 | MEDIUM >= 0.45 | LOW < 0.45' },
+  { id: 'whymatch',    name: 'Why This Matched',     group: 'output',   val: 16, desc: 'The translation table.\nFamily words on the left.\nForensic phrasing on the right.\nPer-row similarity scores.\nUp to 5 best-matching clauses.' },
+  { id: 'casedetail',  name: 'Case Detail',          group: 'output',   val: 12, desc: 'Full case file view.\nPhysical description, circumstances, clothing.\nFormatted dates, full state names.\nSection icons for visual hierarchy.' },
+
+  { id: 'actian',      name: 'Actian VectorAI DB',   group: 'data',     val: 24, desc: 'The vector database \u2014 the core primitive.\nFour named vector spaces on one collection.\ngRPC on port 50051.\nLocal-first, zero cloud calls.\nCosine distance metric.' },
+  { id: 'cases',       name: '60 Synthetic Cases',   group: 'data',     val: 12, desc: 'Ground-truth dataset.\n30 missing persons + 30 unidentified remains.\nEngineered pairs share the same person\nacross forensic and family vocabulary.' },
+  { id: 'ingest',      name: 'Ingest Pipeline',      group: 'data',     val: 12, desc: 'Idempotent ingestion via UUID5 point IDs.\nEach case embedded across all four vector spaces.\nBatched upsert with batch_size=256.' },
+];
+
+const links = [
+  { source: 'query',    target: 'sapbert'   },
+  { source: 'query',    target: 'bge'       },
+  { source: 'query',    target: 'clip'      },
+  { source: 'image',    target: 'clip'      },
+  { source: 'filters',  target: 'prefilter' },
+
+  { source: 'sapbert',  target: 'v_physical' },
+  { source: 'bge',      target: 'v_circum'   },
+  { source: 'bge',      target: 'v_clothing' },
+  { source: 'clip',     target: 'v_image'    },
+
+  { source: 'v_physical', target: 'retrieval' },
+  { source: 'v_circum',   target: 'retrieval' },
+  { source: 'v_clothing', target: 'retrieval' },
+  { source: 'v_image',    target: 'retrieval' },
+  { source: 'prefilter',  target: 'retrieval' },
+
+  { source: 'retrieval', target: 'rrf'     },
+  { source: 'rrf',       target: 'clause'  },
+  { source: 'clause',    target: 'results' },
+
+  { source: 'results',   target: 'whymatch'   },
+  { source: 'results',   target: 'casedetail' },
+
+  { source: 'actian',   target: 'v_physical' },
+  { source: 'actian',   target: 'v_circum'   },
+  { source: 'actian',   target: 'v_clothing' },
+  { source: 'actian',   target: 'v_image'    },
+  { source: 'cases',    target: 'ingest'     },
+  { source: 'ingest',   target: 'actian'     },
+
+  { source: 'sapbert',  target: 'clause' },
+  { source: 'bge',      target: 'clause' },
+];
+
+// ── Graph ───────────────────────────────────────────────────────────
+const graphEl = document.getElementById('graph');
+let spinning = true;
+
+const Graph = ForceGraph3D()(graphEl)
+  .graphData({ nodes, links })
+  .backgroundColor('#0a0a0f')
+  .width(window.innerWidth)
+  .height(window.innerHeight)
+  .showNavInfo(false)
+
+  .nodeColor(n => COLORS[n.group])
+  .nodeVal(n => n.val)
+  .nodeRelSize(5)
+  .nodeOpacity(0.85)
+  .nodeResolution(24)
+  .nodeLabel(n => `<span class="node-label" style="color:${COLORS[n.group]}">${n.name}</span>`)
+
+  .linkColor(link => {
+    const sid = typeof link.source === 'object' ? link.source.id : link.source;
+    const sn = nodes.find(n => n.id === sid);
+    return sn ? COLORS[sn.group] + '44' : '#ffffff22';
+  })
+  .linkWidth(0.8)
+  .linkOpacity(0.25)
+  .linkDirectionalParticles(3)
+  .linkDirectionalParticleWidth(2)
+  .linkDirectionalParticleSpeed(0.005)
+  .linkDirectionalParticleColor(link => {
+    const sid = typeof link.source === 'object' ? link.source.id : link.source;
+    const sn = nodes.find(n => n.id === sid);
+    return sn ? COLORS[sn.group] : '#ffffff';
+  })
+  .linkCurvature(0.15)
+
+  .onNodeClick(node => {
+    document.getElementById('info-group').textContent = GROUP_LABELS[node.group] || '';
+    document.getElementById('info-title').textContent = node.name;
+    document.getElementById('info-desc').textContent = node.desc;
+    document.getElementById('info-panel').style.display = 'block';
+
+    const dist = 100;
+    const ratio = 1 + dist / Math.hypot(node.x, node.y, node.z);
+    Graph.cameraPosition(
+      { x: node.x * ratio, y: node.y * ratio, z: node.z * ratio },
+      node, 1500
+    );
+  })
+  .onNodeHover(node => { graphEl.style.cursor = node ? 'pointer' : 'default'; })
+  .onBackgroundClick(() => { document.getElementById('info-panel').style.display = 'none'; });
+
+// Force tuning
+Graph.d3Force('charge').strength(-250);
+Graph.d3Force('link').distance(70);
+
+// Initial camera
+setTimeout(() => {
+  Graph.cameraPosition({ x: 0, y: 0, z: 400 }, { x: 0, y: 0, z: 0 }, 2000);
+}, 300);
+
+// ── Controls ────────────────────────────────────────────────────────
+function spin() {
+  if (!spinning) return;
+  const t = Date.now() * 0.00008;
+  Graph.cameraPosition({
+    x: 400 * Math.sin(t),
+    y: 80 * Math.sin(t * 0.6),
+    z: 400 * Math.cos(t),
+  });
+  requestAnimationFrame(spin);
+}
+spin();
+
+function resetView() {
+  Graph.cameraPosition({ x: 0, y: 0, z: 400 }, { x: 0, y: 0, z: 0 }, 1500);
+  document.getElementById('info-panel').style.display = 'none';
+}
+
+function toggleSpin() {
+  spinning = !spinning;
+  if (spinning) spin();
+}
+
+window.addEventListener('resize', () => {
+  Graph.width(window.innerWidth).height(window.innerHeight);
+});
+
+</script>
+</body>
+</html>
