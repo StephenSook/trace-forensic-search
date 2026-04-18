@@ -3,6 +3,8 @@
 **Semantic search for missing persons and unidentified remains.**
 A language bridge between grieving families and forensic records — built on Actian VectorAI DB.
 
+**Live preview:** https://trace-forensic-search-ssookra-7703s-projects.vercel.app (frontend only — backend runs locally)
+
 ---
 
 ## The Problem

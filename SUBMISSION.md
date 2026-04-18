@@ -90,7 +90,7 @@ semantic search, vector database, AI/ML
 
 ### Live demo URL
 
-N/A — local-first by design. Submission form may have an optional "Live URL" field; leave blank and reference the local-first constraint in the description.
+https://trace-forensic-search-ssookra-7703s-projects.vercel.app — static frontend only (landing page, search UI). Backend (Actian VectorAI DB, embedding models, forensic data) runs locally by design.
 
 ### Thumbnail / cover image
 
