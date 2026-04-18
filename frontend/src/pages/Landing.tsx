@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 // ── Knowledge graph data (from graphify extraction) ──────────────────────────
@@ -287,9 +287,26 @@ function GraphCanvas() {
 // ── Main Landing Component ───────────────────────────────────────────────────
 export default function Landing() {
   const navigate = useNavigate();
+  const [exiting, setExiting] = useState(false);
+
+  const goToSearch = useCallback(() => {
+    setExiting(true);
+    setTimeout(() => navigate("/search"), 420);
+  }, [navigate]);
+
+  const scrollTo = useCallback((id: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+  }, []);
 
   return (
     <div className="bg-background text-foreground font-sans overflow-x-hidden">
+
+      {/* ── Page exit overlay ── */}
+      <div
+        className="fixed inset-0 z-[999] bg-background pointer-events-none"
+        style={{ opacity: exiting ? 1 : 0, transition: "opacity 400ms ease" }}
+      />
 
       {/* ── NAV ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-8 h-[52px] border-b border-border bg-background/90 backdrop-blur-md">
@@ -297,11 +314,11 @@ export default function Landing() {
           TRACE <span className="text-muted-foreground font-normal">// FORENSIC_LEDGER</span>
         </span>
         <div className="flex items-center gap-6">
-          <a href="#gap"         className="font-mono text-[10px] tracking-[0.12em] uppercase text-muted-foreground hover:text-foreground transition-colors">Problem</a>
-          <a href="#how"         className="font-mono text-[10px] tracking-[0.12em] uppercase text-muted-foreground hover:text-foreground transition-colors">Architecture</a>
-          <a href="#competitive" className="font-mono text-[10px] tracking-[0.12em] uppercase text-muted-foreground hover:text-foreground transition-colors">Research</a>
+          <a href="#gap"         onClick={scrollTo("gap")}         className="font-mono text-[10px] tracking-[0.12em] uppercase text-muted-foreground hover:text-foreground transition-colors">Problem</a>
+          <a href="#how"         onClick={scrollTo("how")}         className="font-mono text-[10px] tracking-[0.12em] uppercase text-muted-foreground hover:text-foreground transition-colors">Architecture</a>
+          <a href="#competitive" onClick={scrollTo("competitive")} className="font-mono text-[10px] tracking-[0.12em] uppercase text-muted-foreground hover:text-foreground transition-colors">Research</a>
           <button
-            onClick={() => navigate("/search")}
+            onClick={goToSearch}
             className="font-mono text-[10px] tracking-[0.1em] uppercase font-semibold px-4 py-1.5 bg-primary text-primary-foreground rounded hover:opacity-90 transition-opacity"
           >
             Open Search
@@ -349,7 +366,7 @@ export default function Landing() {
 
           <div className="flex gap-3 animate-[fadeUp_0.7s_0.8s_both]">
             <button
-              onClick={() => navigate("/search")}
+              onClick={goToSearch}
               className="font-mono text-[11px] tracking-[0.12em] uppercase font-semibold px-6 py-3 bg-primary text-primary-foreground rounded hover:opacity-90 transition-all hover:-translate-y-px flex items-center gap-2"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -357,6 +374,7 @@ export default function Landing() {
             </button>
             <a
               href="#gap"
+              onClick={scrollTo("gap")}
               className="font-mono text-[11px] tracking-[0.12em] uppercase px-5 py-3 border border-border text-muted-foreground rounded hover:border-muted-foreground hover:text-foreground transition-colors"
             >
               The Problem
@@ -561,7 +579,7 @@ export default function Landing() {
                 Open the live app and run the eagle tattoo query. Watch a plain-language description surface a 0.94 semantic match with zero shared vocabulary.
               </p>
               <button
-                onClick={() => navigate("/search")}
+                onClick={goToSearch}
                 className="flex items-center gap-2.5 w-fit font-mono text-[11px] tracking-[0.12em] uppercase font-semibold px-6 py-3 bg-primary text-primary-foreground rounded hover:opacity-90 transition-all hover:-translate-y-px"
               >
                 Open Trace

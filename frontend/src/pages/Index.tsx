@@ -84,7 +84,7 @@ const Index = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-background" style={{ animation: "pageFadeIn 350ms ease both" }}>
       <TraceSidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <TraceHeader />
