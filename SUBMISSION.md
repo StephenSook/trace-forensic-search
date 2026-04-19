@@ -33,7 +33,13 @@ Source of truth for the DoraHacks submission. Copy-paste targets once Stephen co
 
 *(60 chars)*
 
-### Short description (~200–400 chars)
+### Short description (≤256 chars — DoraHacks "Build" field cap, confirmed 2026-04-18)
+
+> Semantic search for missing persons and unidentified remains. Bridges the vocabulary gap between family descriptions ("eagle tattoo") and forensic records ("avian motif dermagraphic") using four named vector spaces in Actian VectorAI DB + RRF. On-device.
+
+*(254 chars)*
+
+### Long-form short description (~400 chars — use wherever the field allows more)
 
 > Trace closes the vocabulary gap between how families describe missing loved ones and how medical examiners write forensic records. A family's "eagle tattoo on his right forearm" and a record's "avian motif dermagraphic, right ventral antebrachium" share zero characters — keyword search never connects them. Trace does, using four named vector spaces in Actian VectorAI DB and reciprocal rank fusion, entirely on-device.
 
