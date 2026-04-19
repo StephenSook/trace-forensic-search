@@ -256,17 +256,15 @@ Screenshots so far cover **Profile only**. Other 4 pages pending Stephen's next 
 | Invite new members | ✅ | Stephen (`leo_sookra9889`) pre-filled as owner. Add **Vinh Le** by searching his DoraHacks handle, GitHub handle (`vinhbin`), or email. If Vinh hasn't registered on DoraHacks, he must sign up first — the search won't return him otherwise. |
 | Team information (short description) | ✅ | See "Team information textbox" below |
 
-### Team information textbox (assume ≤256 chars until confirmed)
+### Team information textbox — primary (no visible char cap; 603 chars)
 
-> Stephen Sookra (frontend, ingest, demo) and Vinh Le (embeddings, search, API). Two-person team building interpretable AI for overlooked real-world problems — starting with Trace, semantic forensic search on Actian VectorAI DB.
+Stephen Sookra (Kennesaw State CS, sophomore) and Vinh Le (Georgia State CS, senior) are a two-person team. Stephen owns frontend, ingest, and demo; Vinh owns embeddings, search orchestration, and the API layer.
 
-*(226 chars)*
+We build interpretable AI for overlooked real-world problems. Trace was chosen deliberately: NamUs — the federal missing-persons and unidentified-remains database — is the clearest example we could find of a place where keyword search actively fails the people it exists to help. It was scoped from day one to be something a medical examiner's office could pilot, not just a hackathon demo.
 
-### Team information fallback (~220 chars, doesn't name Trace if you want it humbler)
+### Team information fallback — tight (226 chars, use if a cap shows up)
 
-> Two-person team. Stephen Sookra (frontend, ingest, demo) and Vinh Le (embeddings, search, API). We build interpretable AI for overlooked real-world problems — starting with semantic forensic search for missing persons.
-
-*(218 chars)*
+Stephen Sookra (frontend, ingest, demo) and Vinh Le (embeddings, search, API). Two-person team building interpretable AI for overlooked real-world problems — starting with Trace, semantic forensic search on Actian VectorAI DB.
 
 ---
 
