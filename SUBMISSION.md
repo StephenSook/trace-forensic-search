@@ -249,6 +249,27 @@ Screenshots so far cover **Profile only**. Other 4 pages pending Stephen's next 
 
 ---
 
+## Page 3 — Team · Field-by-Field Mapping
+
+| Form field | Required? | Use this value |
+|---|---|---|
+| Invite new members | ✅ | Stephen (`leo_sookra9889`) pre-filled as owner. Add **Vinh Le** by searching his DoraHacks handle, GitHub handle (`vinhbin`), or email. If Vinh hasn't registered on DoraHacks, he must sign up first — the search won't return him otherwise. |
+| Team information (short description) | ✅ | See "Team information textbox" below |
+
+### Team information textbox (assume ≤256 chars until confirmed)
+
+> Stephen Sookra (frontend, ingest, demo) and Vinh Le (embeddings, search, API). Two-person team building interpretable AI for overlooked real-world problems — starting with Trace, semantic forensic search on Actian VectorAI DB.
+
+*(226 chars)*
+
+### Team information fallback (~220 chars, doesn't name Trace if you want it humbler)
+
+> Two-person team. Stephen Sookra (frontend, ingest, demo) and Vinh Le (embeddings, search, API). We build interpretable AI for overlooked real-world problems — starting with semantic forensic search for missing persons.
+
+*(218 chars)*
+
+---
+
 ## Demo Video Plan (revised after screenshot)
 
 **Primary host: YouTube** (embeds inline on the DoraHacks BUIDL page — judges watch without leaving the submission). Loom stays as a secondary/backup link in the README.
