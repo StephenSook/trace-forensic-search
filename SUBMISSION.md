@@ -45,24 +45,115 @@ Source of truth for the DoraHacks submission. Copy-paste targets once Stephen co
 
 *(254 chars)*
 
-### Long description / full writeup
+### Details page — copy-ready full writeup (paste everything below the horizontal rule into the Details markdown editor)
 
-> **The problem.** 600,000 people are reported missing in the United States every year. 40,000 sets of unidentified human remains sit in the national system. Both live in NamUs — the federal Missing and Unidentified Persons System — but NamUs runs on keyword search. A grieving family and a medical examiner describing the same person use completely different vocabularies. A mother searches for an *"eagle tattoo on his right forearm"*; the record reads *"avian motif dermagraphic, right ventral antebrachium."* Same person. Zero shared words. The match never happens.
->
-> **What Trace does.** A user types a missing-person description in plain English. Trace semantically matches it against unidentified-remains records and returns ranked candidates with a per-dimension score breakdown and a side-by-side translation panel showing exactly *why* each record matched. Every technical decision traces back to making one demo query work: *"My brother went missing in 2019 in Tennessee. He was 34, about 6 feet tall, had a distinctive tattoo of an eagle on his right forearm, and was last seen near a highway."* Top result: confidence 0.79 (HIGH), warm-path under a second. Upload a photo of an eagle tattoo and the same case surfaces again via CLIP cross-modal matching — text bridges the vocabulary gap, images bridge the modality gap.
->
-> **How we use Actian VectorAI DB.** Not as a generic vector store — as a first-class primitive.
->
-> 1. **Four named vector spaces on one collection.** Physical description (768d SapBERT — biomedical model, the only one that treats "eagle tattoo" and "avian motif dermagraphic" as the same concept), circumstances (1024d BGE-M3), clothing (1024d BGE-M3), and tattoo/photo image (512d CLIP ViT-B/32). Each queried independently via `points.search(vector=, using=)`. Embedding the whole case as one vector was deliberately rejected — it dilutes the signal.
-> 2. **Hard pre-filter DSL.** Sex, age-range overlap, state, date window, and case type applied *before* any vector computation using Actian's `FilterBuilder` with `Field.eq()`, `Field.any_of()`, and `Field.gte()`/`Field.lte()` range operators. Recall budget is never spent on wrong-state or wrong-sex candidates.
-> 3. **Reciprocal Rank Fusion.** Dense and sparse retrievals fused at k=60. No hyperparameter tuning; consistently beats weighted-sum. Interpretable — we can show a medical examiner exactly why a record ranked where it did.
-> 4. **Deterministic UUID5 point IDs** keyed on case_id so re-ingest is idempotent.
->
-> **Local-first by requirement, not aesthetic.** Forensic data contains restricted PII — DNA profiles, dental records, unredacted case circumstances. Cloud APIs are a regulatory non-starter for the people we built this for. Actian runs in one local Docker container on gRPC port 50051; the embedding models run natively on Apple Silicon via MPS (CUDA and CPU fallbacks included); zero external calls after setup. The whole stack fits on a laptop.
->
-> **Stack.** Actian VectorAI DB 0.1.0b2 (gRPC) · SapBERT + BGE-M3 + CLIP ViT-B/32 · FastAPI + Pydantic v2 · React 18 + Vite + TanStack Query + Tailwind · pytest + Vitest.
->
-> **Status.** Ingest runs clean against the real DB (60/60 cases). Demo query hits the engineered ground-truth record at confidence 0.79 (HIGH) with clause-level "Why This Matched" breakdowns. CLIP image upload finds the same case cross-modally. Backend has 223 tests, frontend 18. Everything in the repo is reproducible from `docker compose up -d && python ingest.py && uvicorn main:app`.
+The DoraHacks Details field is a single markdown editor that supports headings, tables, fenced code, images, and auto-embedded YouTube URLs. Everything below the `---` line is the final paste target. No quote-blocks around it — copy as raw markdown.
+
+---
+
+https://youtu.be/Ar2Nd29kwWs
+
+## The problem
+
+**600,000 Americans are reported missing every year. 40,000 sets of unidentified human remains sit unmatched in the federal system.** Both live in NamUs — the National Missing and Unidentified Persons System — but NamUs runs on keyword search.
+
+A grieving family and a medical examiner describing the same person use completely different vocabularies. A mother searches for an *"eagle tattoo on his right forearm"*; the record reads *"avian motif dermagraphic, right ventral antebrachium."* Same person. Zero shared words. The match never happens.
+
+Trace is the semantic bridge between those two vocabularies, built as a first-class application of Actian VectorAI DB.
+
+## What Trace does
+
+A user types a missing-person description in plain English. Trace semantically matches it against unidentified-remains records and returns ranked candidates with a per-dimension score breakdown and a side-by-side "Why This Matched" translation panel showing exactly *why* each record ranked where it did.
+
+Every technical decision traces back to making one demo query work:
+
+> *"My brother went missing in 2019 in Tennessee. He was 34, about 6 feet tall, had a distinctive tattoo of an eagle on his right forearm, and was last seen near a highway."*
+
+**Top result:** confidence **0.79 (HIGH)**, warm-path latency **under a second**.
+
+Upload a photo of an eagle tattoo and the same case surfaces again via CLIP cross-modal matching — **text bridges the vocabulary gap, images bridge the modality gap.**
+
+## How we use Actian VectorAI DB
+
+Not as a generic vector store — as a first-class primitive. Four architectural decisions drive the 30% rubric weight:
+
+### 1. Four named vector spaces on one collection
+
+We deliberately rejected the obvious pattern of embedding a whole case as one vector. Instead, each case carries four independent vectors queried via `points.search(vector=, using=)`:
+
+| Named space | Model | Dims | What it indexes |
+|---|---|---|---|
+| `physical` | SapBERT | 768 | Biomedical model — the only one that treats "eagle tattoo" and "avian motif dermagraphic" as the same concept |
+| `circumstances` | BGE-M3 | 1024 | Last-seen location, date, narrative |
+| `clothing` | BGE-M3 | 1024 | What the person was wearing |
+| `tattoo_image` | CLIP ViT-B/32 | 512 | Image-to-image and text-to-image matching |
+
+Embedding a whole case as one vector dilutes the signal. Named spaces let us score each dimension independently and show the judge exactly which dimension matched.
+
+### 2. Hard pre-filter DSL — recall budget preserved
+
+Sex, age-range overlap, state, date window, and case type are applied *before* any vector computation using Actian's `FilterBuilder`:
+
+```python
+FilterBuilder()
+  .must(Field.eq("sex", query.sex))
+  .must(Field.any_of("state", query.states))
+  .must(Field.gte("date_last_seen", query.date_low))
+  .must(Field.lte("date_last_seen", query.date_high))
+  .build()
+```
+
+Recall budget is never spent on wrong-state or wrong-sex candidates. This matters at scale — forensic triage is about compressing 40,000 records into a shortlist a human can read.
+
+### 3. Reciprocal Rank Fusion (k=60)
+
+Dense and sparse retrievals are fused at k=60. No hyperparameter tuning required; RRF consistently beats weighted-sum and is **interpretable** — we can show a medical examiner exactly why each record ranked where it did.
+
+### 4. Deterministic UUID5 point IDs
+
+Point IDs are UUID5-hashed on `case_id`, so re-ingest is idempotent. No dangling duplicates when the NamUs feed re-runs.
+
+## Architecture
+
+![Trace architecture](https://raw.githubusercontent.com/StephenSook/trace-forensic-search/main/gitdiagram.png)
+
+Frontend (React SPA) → FastAPI → Search Orchestrator, which fans out to the Filter DSL, the four embedding spaces, and Actian VectorAI DB over gRPC. Ingest and case-generation paths are isolated so the demo is reproducible from a clean checkout.
+
+## Local-first by requirement, not aesthetic
+
+Forensic data contains restricted PII — DNA profiles, dental records, unredacted case circumstances. **Cloud APIs are a regulatory non-starter for the people we built this for.** Actian runs in one local Docker container on gRPC port 50051; the embedding models run natively on Apple Silicon via MPS (CUDA and CPU fallbacks included); **zero external calls after setup**. The whole stack fits on a laptop.
+
+This maps directly to the hackathon's bonus point criteria for **local / ARM / offline** operation.
+
+## Explore the code visually
+
+- **[3D Knowledge Graph](https://stephensook.github.io/trace-forensic-search/trace-knowledge-graph.html)** — interactive force-directed graph of every symbol and relationship in the codebase (797 symbols, 1895 relationships, 32 execution flows).
+- **[Interactive Repo Explorer](https://stephensook.github.io/trace-forensic-search/trace-repo-interactive.html)** — drill through every module.
+- **[Repo structure diagram](https://stephensook.github.io/trace-forensic-search/diagram.svg)** — auto-regenerated on every push.
+- **[Source code](https://github.com/StephenSook/trace-forensic-search)** — MIT licensed.
+
+## Stack
+
+Actian VectorAI DB 0.1.0b2 (gRPC) · SapBERT + BGE-M3 + CLIP ViT-B/32 · FastAPI + Pydantic v2 · React 18 + Vite + TanStack Query + Tailwind · pytest + Vitest.
+
+## Status
+
+- **Ingest:** 60/60 cases clean against the real Actian DB.
+- **Demo query:** hits the engineered ground-truth record at confidence **0.79 (HIGH)** with clause-level "Why This Matched" breakdowns.
+- **CLIP image upload:** finds the same case cross-modally.
+- **Tests:** 223 backend (pytest) · 18 frontend (vitest) — all passing.
+- **Reproducible cold-start:** `docker compose up -d && python ingest.py && uvicorn main:app` from a fresh checkout.
+
+## Live demo note
+
+The hosted Vercel page shows the static frontend only (landing page + search UI). The **full stack** — Actian VectorAI DB, embedding models, and forensic data — runs locally by design so that restricted PII never touches a hosted environment. The demo video at the top shows the end-to-end system running.
+
+## Team
+
+| Name | Role | GitHub |
+|---|---|---|
+| Stephen Sookra | Frontend, ingest, demo | [@StephenSook](https://github.com/StephenSook) |
+| Vinh Le | Embeddings, search, API | [@vinhbin](https://github.com/vinhbin) |
 
 ### Tech stack / technologies (as an array, DoraHacks usually wants comma-separated tags)
 
