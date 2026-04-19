@@ -33,15 +33,17 @@ Source of truth for the DoraHacks submission. Copy-paste targets once Stephen co
 
 *(60 chars)*
 
-### Short description (≤256 chars — DoraHacks "Build" field cap, confirmed 2026-04-18)
+### Short description (~400 chars — primary; use this unless the field shows a lower cap)
+
+> Trace closes the vocabulary gap between how families describe missing loved ones and how medical examiners write forensic records. A family's "eagle tattoo on his right forearm" and a record's "avian motif dermagraphic, right ventral antebrachium" share zero characters — keyword search never connects them. Trace does, using four named vector spaces in Actian VectorAI DB and reciprocal rank fusion, entirely on-device.
+
+*(420 chars)*
+
+### Short description fallback (≤256 chars — use only if the field enforces the same cap as the Vision field)
 
 > Semantic search for missing persons and unidentified remains. Bridges the vocabulary gap between family descriptions ("eagle tattoo") and forensic records ("avian motif dermagraphic") using four named vector spaces in Actian VectorAI DB + RRF. On-device.
 
 *(254 chars)*
-
-### Long-form short description (~400 chars — use wherever the field allows more)
-
-> Trace closes the vocabulary gap between how families describe missing loved ones and how medical examiners write forensic records. A family's "eagle tattoo on his right forearm" and a record's "avian motif dermagraphic, right ventral antebrachium" share zero characters — keyword search never connects them. Trace does, using four named vector spaces in Actian VectorAI DB and reciprocal rank fusion, entirely on-device.
 
 ### Long description / full writeup
 
@@ -144,9 +146,13 @@ Screenshots so far cover **Profile only**. Other 4 pages pending Stephen's next 
 | Demo video | ✅ | **YouTube link** — see "Demo Video Plan" below |
 | Social links (1–3, min 1) | ✅ | Stephen's GitHub profile: `https://github.com/StephenSook` · optional: X/Twitter, LinkedIn |
 
-### Vision textbox (paste target)
+### Vision textbox (≤256 chars — confirmed 2026-04-18 via form error)
 
-Character limit unknown — draft is tight so it fits even a 500-char cap. Adjust if DoraHacks shows a counter.
+> 600,000 Americans go missing each year. 40,000 unidentified remains sit in NamUs — but NamUs runs on keyword search. A family's "eagle tattoo" and a coroner's "avian motif dermagraphic" never match. Trace bridges the vocabulary gap, on-device.
+
+*(243 chars — 13 chars of buffer)*
+
+### Long-form Vision (~550 chars — use if a field allows it)
 
 > 600,000 people are reported missing in the United States every year and 40,000 sets of unidentified human remains sit unmatched in the national system. Both live in NamUs, the federal database — but NamUs runs on keyword search. A family's "eagle tattoo on his right forearm" and a medical examiner's "avian motif dermagraphic, right ventral antebrachium" share zero characters. Under keyword search they never meet. Trace is the semantic bridge that connects them, running entirely on-device so restricted forensic PII never touches a cloud API.
 
