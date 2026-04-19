@@ -94,7 +94,7 @@ semantic search, vector database, AI/ML
 
 ### Demo video URL
 
-*(TODO — Loom link. Task 5.2. Script lives at `DEMO_SCRIPT.md`.)*
+https://youtu.be/Ar2Nd29kwWs
 
 ### Live demo URL
 
@@ -114,7 +114,7 @@ MIT
 
 - [ ] Repo is public on github.com/StephenSook/trace-forensic-search
 - [ ] README reflects current state (✅ done, commit `8cd8390`)
-- [ ] Loom demo video uploaded and link copied (Task 5.2)
+- [x] Demo video uploaded to YouTube: https://youtu.be/Ar2Nd29kwWs
 - [ ] All tests green on both sides (backend pytest · frontend vitest)
 - [ ] `docker compose up` + `python ingest.py` + `uvicorn main:app` works cold on Stephen's machine — rehearse once
 - [ ] Vinh's GitHub handle added to team table above
@@ -143,7 +143,7 @@ Screenshots so far cover **Profile only**. Other 4 pages pending Stephen's next 
 | Is this BUIDL an AI Agent? | ✅ | **No** (Trace is retrieval, not agentic) |
 | GitHub/Gitlab/Bitbucket | ✅ | `https://github.com/StephenSook/trace-forensic-search` |
 | Project website (optional) | — | Leave blank (local-first, no hosted demo) |
-| Demo video | ✅ | **YouTube link** — see "Demo Video Plan" below |
+| Demo video | ✅ | `https://youtu.be/Ar2Nd29kwWs` |
 | Social links (1–3, min 1) | ✅ | Stephen's GitHub profile: `https://github.com/StephenSook` · optional: X/Twitter, LinkedIn |
 
 ### Vision textbox (≤256 chars — confirmed 2026-04-18 via form error)
